@@ -1,0 +1,48 @@
+<!-- src/app/component/customer-list/customer-list.html -->
+<div class="customer-container">
+  <div class="header-section">
+    <h2>Käufer-Übersicht</h2>
+    <span class="badge">Gesamt: {{ customers().length }}</span>
+  </div>
+
+  <form [formGroup]="customerForm" (ngSubmit)="onSubmit()" class="add-customer-form">
+    <div class="form-grid">
+      <input type="text" formControlName="name" placeholder="Vorname..." class="form-input">
+      <input type="text" formControlName="familyName" placeholder="Nachname..." class="form-input">
+      <input type="text" formControlName="description" placeholder="Beschreibung (z.B. B2B Großkunde)..." class="form-input">
+      <input type="text" formControlName="phoneNumber" placeholder="Telefon (z.B. +352...)" class="form-input">
+    </div>
+    <button type="submit" [disabled]="customerForm.invalid" class="btn-primary">Käufer Hinzufügen</button>
+  </form>
+  
+  <table class="honey-table">
+    <thead>
+      <tr>
+        <th>Vorname</th>
+        <th>Nachname</th>
+        <th>Beschreibung</th>
+        <th>Telefon</th>
+        <th>Kunden-ID (UUID)</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (customer of customers(); track customer.customerId) {
+        <tr>
+          <td class="fw-bold">{{ customer.name }}</td>
+          <td class="fw-bold">{{ customer.familyName }}</td>
+          <td>{{ customer.description }}</td>
+          <td>{{ customer.phoneNumber }}</td>
+          <td class="text-muted">{{ customer.customerId }}</td>
+          <td>
+            <button class="btn-action">Details</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="6" class="empty-state">Keine Käufer in der Datenbank gefunden.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
