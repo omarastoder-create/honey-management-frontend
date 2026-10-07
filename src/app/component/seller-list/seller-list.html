@@ -1,0 +1,37 @@
+<!-- src/app/component/seller-list/seller-list.html -->
+<div class="seller-container">
+  <div class="header-section">
+    <h2>Verkäufer-Übersicht</h2>
+    <span class="badge">Gesamt: {{ sellers().length }}</span>
+  </div>
+
+  <form [formGroup]="sellerForm" (ngSubmit)="onSubmit()" class="add-seller-form">
+    <input type="text" formControlName="name" placeholder="Neuer Verkäufername..." class="form-input">
+    <button type="submit" [disabled]="sellerForm.invalid" class="btn-primary">Hinzufügen</button>
+  </form>
+  
+  <table class="honey-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Verkäufer-ID (UUID)</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (seller of sellers(); track seller.sellerId) {
+        <tr>
+          <td class="fw-bold">{{ seller.name }}</td>
+          <td class="text-muted">{{ seller.sellerId }}</td>
+          <td>
+            <button class="btn-action">Details</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="3" class="empty-state">Keine Verkäufer in der Datenbank gefunden.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
