@@ -1,0 +1,108 @@
+<div class="product-container">
+
+  <div class="header-section">
+    <h2>Products</h2>
+    <span class="badge">{{ products().length }} products</span>
+  </div>
+
+  <form class="add-product-form">
+
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <input
+          id="description"
+          type="text"
+          class="form-input"
+          placeholder="Product description"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="pricePerUnit">Price per unit</label>
+        <input
+          id="pricePerUnit"
+          type="number"
+          step="0.01"
+          class="form-input"
+          placeholder="0.00"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="unitsToSell">Units to sell</label>
+        <input
+          id="unitsToSell"
+          type="number"
+          class="form-input"
+          placeholder="0"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="dateOfHarvest">Date of harvest</label>
+        <input
+          id="dateOfHarvest"
+          type="date"
+          class="form-input"
+        />
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn-primary">
+      Add Product
+    </button>
+
+  </form>
+
+  <table class="product-table">
+
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Price / Unit</th>
+        <th>Units</th>
+        <th>Date of Harvest</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      @for (product of products(); track product.productId) {
+        <tr>
+          <td class="fw-bold">
+            {{ product.description }}
+          </td>
+
+          <td class="price">
+            €{{ product.pricePerUnit | number:'1.2-2' }}
+          </td>
+
+          <td class="units">
+            {{ product.unitsToSell }}
+          </td>
+
+          <td class="date">
+            {{ product.dateOfHarvest | date:'dd/MM/yyyy' }}
+          </td>
+
+          <td>
+            <button class="btn-action">
+              Edit
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5" class="empty-state">
+            No products found.
+          </td>
+        </tr>
+      }
+    </tbody>
+
+  </table>
+
+</div>
