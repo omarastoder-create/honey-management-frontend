@@ -1,25 +1,29 @@
 // src/app/component/home/home.ts
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ProductResponse, ProductService } from '../../services/products';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  template: `
-    <div class="dashboard-card">
-      <h2>Willkommen im Dashboard</h2>
-      <p>Wähle einen Bereich aus der oberen Navigation, um die Daten zu verwalten.</p>
-    </div>
-  `,
-  styles: [`
-    .dashboard-card {
-      background: #fff;
-      padding: 40px;
-      border-radius: 8px;
-      border: 1px solid #e8e0c5;
-      text-align: center;
-      color: #5c4e26;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-    }
-  `]
+  imports: [CommonModule],
+  templateUrl: './home.html',
+  styleUrl: './home.scss'
 })
-export class HomeComponent {}
+export class HomeComponent implements OnInit {
+
+  private readonly productService = inject(ProductService);
+  
+  readonly products = signal<ProductResponse[]>([]);
+
+  ngOnInit(): void {
+    this.loadProducts();
+  }
+
+  private loadProducts(): void {
+    this.productService.getAllProducts().subscribe({
+      next: (data) => this.products.set(data),
+      error: (err) => console.error('Fehler beim Laden der Dashboard-Produkte:', err)
+    });
+  }
+}
