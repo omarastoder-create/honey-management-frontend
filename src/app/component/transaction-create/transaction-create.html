@@ -1,0 +1,76 @@
+<!-- src/app/component/transaction-create/transaction-create.html -->
+<div class="container">
+  <h2>Neuen Verkauf anlegen</h2>
+
+  <!-- Fehler-Banner für Backend-Validierungen (z.B. Bestandsfehler) -->
+  @if (errorMessage()) {
+    <div class="error-banner">
+      ⚠ {{ errorMessage() }}
+    </div>
+  }
+
+  <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+    
+    <!-- Stammdaten (Kopfdaten des Bons) -->
+    <div class="form-section">
+      <div class="form-group">
+        <label for="sellerId">Verkäufer *</label>
+        <select id="sellerId" formControlName="sellerId">
+          <option value="" disabled>Bitte wählen...</option>
+          @for (seller of sellers(); track seller.sellerId) {
+            <option [value]="seller.sellerId">{{ seller.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="customerId">Käufer *</label>
+        <select id="customerId" formControlName="customerId">
+          <option value="" disabled>Bitte wählen...</option>
+          @for (customer of customers(); track customer.customerId) {
+            <option [value]="customer.customerId">{{ customer.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Produkte (Das FormArray für die Bon-Zeilen) -->
+    <div class="form-section">
+      <h3>Produkte</h3>
+      
+      <div formArrayName="items">
+        @for (item of items.controls; track $index) {
+          <div [formGroupName]="$index" class="item-row">
+            
+            <div class="form-group">
+              <label>Produkt</label>
+              <select formControlName="productId">
+                <option value="" disabled>Honigsorte wählen...</option>
+                @for (product of products(); track product.productId) {
+                  <option [value]="product.productId">{{ product.description }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Menge</label>
+              <input type="number" formControlName="quantity" min="1">
+            </div>
+
+            <button type="button" class="btn-danger" (click)="removeItem($index)" [disabled]="items.length === 1">
+              X
+            </button>
+          </div>
+        }
+      </div>
+
+      <button type="button" class="btn-secondary mt-10" (click)="addItem()">+ Weiteres Produkt hinzufügen</button>
+    </div>
+
+    <!-- Submit Bereich -->
+    <div class="actions">
+      <button type="submit" class="btn-primary" [disabled]="transactionForm.invalid">Verkauf abschließen</button>
+    </div>
+
+  </form>
+</div>

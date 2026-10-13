@@ -9,4 +9,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class AppComponent {}
+export class AppComponent {
+  title = 'honey-management-frontend';
+}

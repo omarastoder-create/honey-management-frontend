@@ -1,0 +1,29 @@
+<!-- transaction-list.html -->
+<div class="container">
+  <h2>Verkaufshistorie</h2>
+  
+  @if (transactions().length === 0) {
+    <p>Keine Transaktionen gefunden.</p>
+  } @else {
+    <table class="transaction-table">
+      <thead>
+        <tr>
+          <th>Transaktions-ID</th>
+          <th>Datum</th>
+          <th>Käufer (ID)</th>
+          <th>Gesamtpreis</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (tx of transactions(); track tx.transactionId) {
+          <tr>
+            <td>{{ tx.transactionId }}</td>
+            <td>{{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</td>
+            <td>{{ tx.customerId }}</td>
+            <td>{{ tx.totalPrice | currency:'EUR' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
