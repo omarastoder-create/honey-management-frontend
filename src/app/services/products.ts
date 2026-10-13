@@ -6,7 +6,7 @@ export interface ProductRequest {
     description: string;
     pricePerUnit: number;
     unitsToSell: number;
-    dateOfHarvest: string; // Geändert zu string
+    dateOfHarvest: string; 
 }
 
 export interface ProductResponse {
@@ -14,7 +14,8 @@ export interface ProductResponse {
     description: string;
     pricePerUnit: number;
     unitsToSell: number;
-    dateOfHarvest: string; // Geändert zu string
+    dateOfHarvest: string; 
+    imageUrl: string | null; // NEU: Nimmt den Bild-Pfad vom Backend auf
 }
 
 @Injectable({
@@ -28,7 +29,8 @@ export class ProductService {
         return this.http.get<ProductResponse[]>(this.apiUrl);
     }
 
-    createProduct(request: ProductRequest): Observable<ProductResponse> {
-        return this.http.post<ProductResponse>(this.apiUrl, request);
+    // GEÄNDERT: Erwartet FormData statt ProductRequest
+    createProduct(formData: FormData): Observable<ProductResponse> {
+        return this.http.post<ProductResponse>(this.apiUrl, formData);
     }
 }
