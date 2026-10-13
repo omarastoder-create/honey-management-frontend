@@ -1,22 +1,23 @@
+// src/app/component/product-list/product-list.ts
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ProductResponse, ProductService } from '../../services/products';
+import { ProductRequest, ProductResponse, ProductService } from '../../services/products';
 
 @Component({
-  imports: [CommonModule,ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   standalone: true,
   selector: 'app-product-list',
   styleUrl: './product-list.scss',
   templateUrl: './product-list.html',
 })
-export class ProductList {
+export class ProductList implements OnInit {
 
-  private productService = inject(ProductService);
+  private readonly productService = inject(ProductService);
 
-  products = signal<ProductResponse[]>([]); 
+  readonly products = signal<ProductResponse[]>([]); 
   
-  productForm = new FormGroup({
+  readonly productForm = new FormGroup({
     description: new FormControl('', [Validators.required, Validators.minLength(5)]),
     pricePerUnit: new FormControl('', [Validators.required, Validators.min(0)]),
     unitsToSell: new FormControl('', [Validators.required, Validators.min(1)]),
@@ -35,13 +36,16 @@ export class ProductList {
   }
 
   onSubmit(): void {
-    if (this.productForm.invalid) return;
+    if (this.productForm.invalid) {
+      this.productForm.markAllAsTouched();
+      return;
+    }
 
-    const request = {
+    const request: ProductRequest = {
       description: this.productForm.value.description!,
       pricePerUnit: Number(this.productForm.value.pricePerUnit!),
       unitsToSell: Number(this.productForm.value.unitsToSell!),
-      dateOfHarvest: new Date(this.productForm.value.dateOfHarvest!)
+      dateOfHarvest: this.productForm.value.dateOfHarvest!
     };
 
     this.productService.createProduct(request).subscribe({
@@ -52,6 +56,4 @@ export class ProductList {
       error: (err) => console.error('Fehler beim Erstellen:', err)
     });
   }
-
-
 }
