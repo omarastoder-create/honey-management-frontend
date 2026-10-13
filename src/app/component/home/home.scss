@@ -1,0 +1,119 @@
+/* src/app/component/home/home.scss */
+.dashboard-wrapper {
+  padding: 2rem;
+  background-color: #fefcf7;
+  overflow: hidden;
+}
+
+h2 {
+  color: #2c2a24;
+  margin-bottom: 1.5rem;
+  border-bottom: 3px solid #f3c623;
+  display: inline-block;
+  padding-bottom: 0.5rem;
+}
+
+.orbit-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+  &::before {
+    left: 0;
+    background: linear-gradient(to right, #fefcf7 0%, rgba(254, 252, 247, 0) 100%);
+  }
+  &::after {
+    right: 0;
+    background: linear-gradient(to left, #fefcf7 0%, rgba(254, 252, 247, 0) 100%);
+  }
+}
+
+.orbit-track {
+  display: flex;
+  width: max-content;
+  /* Duration increased from 30s to 55s for a smoother, slower rotation */
+  animation: orbit 55s linear infinite;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+.track-half {
+  display: flex;
+  gap: 2rem;
+  padding-right: 2rem;
+}
+
+.product-card {
+  /* Card width increased from 250px to 320px */
+  width: 320px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #e8e0c5;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: #f3c623;
+  }
+
+  img {
+    width: 100%;
+    /* Image height increased from 180px to 220px */
+    height: 220px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .placeholder-img {
+    width: 100%;
+    height: 220px;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+  }
+
+  .card-details {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #2c2a24;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .price {
+      font-weight: 600;
+      color: #735a1f;
+      font-size: 1.1rem;
+    }
+  }
+}
+
+@keyframes orbit {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}

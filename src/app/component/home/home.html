@@ -1,0 +1,44 @@
+<!-- dashboard.html -->
+<div class="dashboard-wrapper">
+  <h2>Featured Products</h2>
+  
+  <div class="orbit-container">
+    <div class="orbit-track">
+      
+      <!-- Hälfte 1: Originale Liste -->
+      <div class="track-half">
+        @for (product of products(); track product.productId) {
+          <div class="product-card">
+            @if (product.imageUrl) {
+              <img [src]="'http://localhost:8080' + product.imageUrl" alt="Product image">
+            } @else {
+              <div class="placeholder-img">No Image</div>
+            }
+            <div class="card-details">
+              <h3>{{ product.description }}</h3>
+              <span class="price">€{{ product.pricePerUnit | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Hälfte 2: Exaktes Duplikat für den nahtlosen Loop -->
+      <div class="track-half">
+        @for (product of products(); track product.productId + '-dup') {
+          <div class="product-card">
+            @if (product.imageUrl) {
+              <img [src]="'http://localhost:8080' + product.imageUrl" alt="Product image">
+            } @else {
+              <div class="placeholder-img">No Image</div>
+            }
+            <div class="card-details">
+              <h3>{{ product.description }}</h3>
+              <span class="price">€{{ product.pricePerUnit | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+</div>
