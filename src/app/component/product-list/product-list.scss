@@ -40,7 +40,6 @@
   border-radius: 6px;
   border: 1px solid #e8e0c5;
   margin-bottom: 24px;
-
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -76,6 +75,75 @@
       box-shadow: 0 0 0 2px rgba(243, 198, 35, 0.2);
     }
   }
+
+  /* --- NEUE KLASSEN FÜR DEN CUSTOM FILE UPLOAD --- */
+  
+  /* Erzwingt das Ausblenden des nativen hässlichen Buttons */
+  .hidden-input {
+    display: none !important; 
+  }
+
+  .file-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 100%; 
+  }
+
+  .custom-file-button {
+    background-color: #fff;
+    color: #5c4e26;
+    border: 1px solid #d4c49c;
+    border-radius: 4px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+    text-align: center;
+
+    &:hover {
+      border-color: #f3c623;
+      background-color: #fcf3d9;
+    }
+  }
+
+  .file-name {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  /* Harte Begrenzung für das Vorschau-Bild */
+  .image-preview-wrapper {
+    margin-top: 12px;
+    border: 1px dashed #d4c49c;
+    border-radius: 6px;
+    padding: 8px;
+    background-color: #fff;
+    
+    /* Zwingt den Container auf eine feste Maximalgröße */
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Schneidet alles ab, was über den Container ragt */
+
+    .image-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Verhindert Verzerrungen */
+      border-radius: 4px;
+      display: block;
+    }
+  }
+  /* ----------------------------------------------- */
 
   .btn-primary {
     align-self: flex-start;

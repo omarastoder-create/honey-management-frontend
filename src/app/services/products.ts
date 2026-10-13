@@ -15,6 +15,7 @@ export interface ProductResponse {
     pricePerUnit: number;
     unitsToSell: number;
     dateOfHarvest: string; // Geändert zu string
+    imageUrl: string | null;
 }
 
 @Injectable({
@@ -28,7 +29,7 @@ export class ProductService {
         return this.http.get<ProductResponse[]>(this.apiUrl);
     }
 
-    createProduct(request: ProductRequest): Observable<ProductResponse> {
-        return this.http.post<ProductResponse>(this.apiUrl, request);
-    }
+  createProduct(formData: FormData): Observable<ProductResponse> {
+  return this.http.post<ProductResponse>(this.apiUrl, formData);
+}
 }
