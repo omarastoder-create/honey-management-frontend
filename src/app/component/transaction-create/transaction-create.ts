@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { SellerResponse, SellerService } from '../../services/seller.service';
 import { CustomerResponse, CustomerService } from '../../services/customer.service';
 import { ProductResponse, ProductService } from '../../services/products';
-import { TransactionService } from '../../services/transaction.service';
+import { SaleTransactionRequest, TransactionService } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-transaction-create',
@@ -49,8 +49,22 @@ export class TransactionCreateComponent implements OnInit {
   addItem(): void {
     const itemForm = this.fb.group({
       productId: ['', Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1)]]
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      customPricePerUnit: [null as number | null, [Validators.min(0)]],
+      isGift: [false]
     });
+
+    // Wenn "Geschenk" aktiviert wird, Sonderpreis-Feld leeren und deaktivieren
+    itemForm.get('isGift')?.valueChanges.subscribe((isGift: boolean | null) => {
+      const priceControl = itemForm.get('customPricePerUnit');
+      if (isGift) {
+        priceControl?.setValue(null, { emitEvent: false });
+        priceControl?.disable({ emitEvent: false });
+      } else {
+        priceControl?.enable({ emitEvent: false });
+      }
+    });
+
     this.items.push(itemForm);
   }
 
@@ -65,19 +79,35 @@ export class TransactionCreateComponent implements OnInit {
     }
 
     this.errorMessage.set(null);
-    const payload = this.transactionForm.value;
-    
-    // Angepasst an die Backend-Methodenbezeichnung (createSaleTransaction)
+
+    // getRawValue() inkludiert auch deaktivierte Felder (wie customPricePerUnit bei isGift = true)
+    const rawValue = this.transactionForm.getRawValue();
+
+    // Sauberes DTO-Mapping verhindert 400 Bad Request durch leere Strings ("")
+    const payload: SaleTransactionRequest = {
+      sellerId: rawValue.sellerId,
+      customerId: rawValue.customerId,
+      items: rawValue.items.map((item: any) => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        customPricePerUnit:
+          item.isGift || item.customPricePerUnit === '' || item.customPricePerUnit === null
+            ? null
+            : Number(item.customPricePerUnit),
+        isGift: Boolean(item.isGift)
+      }))
+    };
+
     this.transactionService.createSaleTransaction(payload).subscribe({
       next: () => {
         this.router.navigate(['/transactions']);
       },
       error: (err) => {
-        if (err.status === 400 && err.error?.message) {
-          this.errorMessage.set(err.error.message);
-        } else {
-          this.errorMessage.set('Ein unerwarteter Serverfehler ist aufgetreten.');
-        }
+        const backendMsg =
+          err.error?.message ||
+          (typeof err.error === 'string' ? err.error : null) ||
+          'Ungültige Eingabe oder nicht genügend Bestand (400 Bad Request).';
+        this.errorMessage.set(backendMsg);
         console.error('Fehler beim Erstellen der Transaktion:', err);
       }
     });

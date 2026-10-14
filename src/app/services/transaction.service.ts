@@ -3,23 +3,39 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+export interface TransactionItemRequest {
+  readonly productId: string;
+  readonly quantity: number;
+  readonly customPricePerUnit: number | null;
+  readonly isGift: boolean;
+}
+
+export interface SaleTransactionRequest {
+  readonly sellerId: string;
+  readonly customerId: string;
+  readonly items: readonly TransactionItemRequest[];
+}
+
 export interface TransactionItemResponse {
+  readonly itemId: string;
+  readonly productId: string;
   readonly productDescription: string;
   readonly units: number;
   readonly pricePerUnit: number;
-  readonly subTotal: number;
+  readonly subtotalPrice: number;
+  readonly subTotal?: number; // Abwärtskompatibel für dein Template
+  readonly isGift: boolean;
 }
 
 export interface SaleTransactionResponse {
   readonly transactionId: string;
-  readonly saleDate: any;
+  readonly saleDate: string;
   readonly sellerName: string;
   readonly customerName: string;
   readonly totalPrice: number;
   readonly items: readonly TransactionItemResponse[];
 }
 
-// Alias für die Kompatibilität mit den Importen in der transaction-list.ts
 export type TransactionResponse = SaleTransactionResponse;
 
 @Injectable({
@@ -33,7 +49,7 @@ export class TransactionService {
     return this.http.get<SaleTransactionResponse[]>(this.apiUrl);
   }
 
-  createSaleTransaction(request: any): Observable<SaleTransactionResponse> {
+  createSaleTransaction(request: SaleTransactionRequest): Observable<SaleTransactionResponse> {
     return this.http.post<SaleTransactionResponse>(this.apiUrl, request);
   }
 }

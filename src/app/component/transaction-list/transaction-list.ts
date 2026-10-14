@@ -1,7 +1,7 @@
 // src/app/component/transaction-list/transaction-list.ts
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { TransactionResponse, TransactionService } from '../../services/transaction.service';
+import { SaleTransactionResponse, TransactionService } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-transaction-list',
@@ -11,14 +11,11 @@ import { TransactionResponse, TransactionService } from '../../services/transact
   styleUrl: './transaction-list.scss'
 })
 export class TransactionListComponent implements OnInit {
-
   private readonly transactionService = inject(TransactionService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly transactions = signal<TransactionResponse[]>([]);
-  readonly selectedTransaction = signal<TransactionResponse | null>(null);
+  readonly transactions = signal<SaleTransactionResponse[]>([]);
+  readonly selectedTransaction = signal<SaleTransactionResponse | null>(null);
 
-  // Berechnet den Gesamtumsatz reaktiv und ohne redundante Methodenaufrufe im Template
   readonly totalRevenue = computed(() =>
     this.transactions().reduce((sum, tx) => sum + (tx.totalPrice ?? 0), 0)
   );
@@ -27,17 +24,18 @@ export class TransactionListComponent implements OnInit {
     this.loadTransactions();
   }
 
-  private loadTransactions(): void {
+  loadTransactions(): void {
     this.transactionService.getAllTransactions().subscribe({
       next: (data) => this.transactions.set(data),
-      error: (err) => console.error('Fehler beim Laden der Transaktionen:', err)
+      error: (err) => console.error('Fehler beim Laden der Verkaufshistorie:', err)
     });
   }
 
-  printReceipt(transaction: TransactionResponse): void {
-    this.selectedTransaction.set(transaction);
-    // Synchronisiert das DOM sofort, bevor der Browser den Print-Snapshot erstellt
-    this.cdr.detectChanges();
-    window.print();
+  printReceipt(tx: SaleTransactionResponse): void {
+    this.selectedTransaction.set(tx);
+    // Kurzer Timeout gibt Angular Zeit, den @if-Block für den Druckbeleg ins DOM zu rendern
+    setTimeout(() => {
+      window.print();
+    }, 100);
   }
 }

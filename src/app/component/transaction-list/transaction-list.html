@@ -31,10 +31,13 @@
               <td class="text-muted">#{{ tx.transactionId | slice:0:8 }}</td>
               <td class="date">{{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</td>
               <td>
-                @for (item of tx.items; track $index) {
+                @for (item of tx.items; track item.itemId) {
                   <div class="item-line">
                     <span class="unit-pill">{{ item.units }}x</span>
                     <span class="fw-bold">{{ item.productDescription }}</span>
+                    @if (item.isGift) {
+                      <span class="badge">🎁 Geschenk</span>
+                    }
                   </div>
                 }
               </td>
@@ -94,12 +97,17 @@
         </tr>
       </thead>
       <tbody>
-        @for (item of tx.items; track $index) {
+        @for (item of tx.items; track item.itemId) {
           <tr>
-            <td>{{ item.productDescription }}</td>
+            <td>
+              {{ item.productDescription }}
+              @if (item.isGift) {
+                <span> (Geschenk / Gratuit)</span>
+              }
+            </td>
             <td>{{ item.units }} Stk.</td>
             <td>€{{ item.pricePerUnit | number:'1.2-2' }}</td>
-            <td class="text-right fw-bold">€{{ item.subTotal | number:'1.2-2' }}</td>
+            <td class="text-right fw-bold">€{{ item.subtotalPrice | number:'1.2-2' }}</td>
           </tr>
         }
       </tbody>
