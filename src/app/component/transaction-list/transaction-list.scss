@@ -1,25 +1,273 @@
-/* transaction-list.scss */
-.container {
-  padding: 20px;
+// src/app/component/transaction-list/transaction-list.scss
+
+.transaction-container {
+  background-color: #fefcf7;
+  border: 1px solid #e8e0c5;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 3px solid #f3c623;
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #2c2a24;
+  }
+
+  .subtitle {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #7a6e52;
+  }
+}
+
+.stats-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.badge {
+  background-color: #fcf3d9;
+  color: #7a6012;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  &.badge-highlight {
+    background-color: #f3c623;
+    color: #1a1a1a;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
 }
 
 .transaction-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
-
-  th, td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-  }
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
 
   th {
-    background-color: #f4f4f4;
-    font-weight: bold;
+    background-color: #fbf7ec;
+    color: #5c4e26;
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    border-bottom: 2px solid #e8e0c5;
+  }
+
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0ece1;
+    font-size: 0.95rem;
+    vertical-align: middle;
+    color: #2c2a24;
   }
 
   tr:hover {
-    background-color: #f9f9f9;
+    background-color: #fffef8;
+  }
+
+  .fw-bold {
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .text-muted {
+    color: #777;
+    font-family: monospace;
+    font-size: 0.85rem;
+  }
+
+  .date {
+    color: #555;
+    font-size: 0.9rem;
+  }
+
+  .unit-pill {
+    background: #f5efe0;
+    color: #5c4e26;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .price {
+    font-weight: 700;
+    color: #735a1f;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+}
+
+.btn-print {
+  background-color: #fff;
+  border: 1px solid #d4c49c;
+  color: #5c4e26;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #f3c623;
+    color: #1a1a1a;
+    border-color: #f3c623;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 40px;
+  font-style: italic;
+}
+
+/* Im normalen Browser-Modus ist der Druckbeleg unsichtbar */
+.print-only-receipt {
+  display: none;
+}
+
+/* --- NATIVE PRINT ENGINE --- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only-receipt {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 99999;
+    padding: 40px;
+    color: #000;
+    font-family: sans-serif;
+  }
+
+  .receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #000;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+    }
+
+    .personal-tag {
+      margin: 4px 0 0 0;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: #333;
+    }
+
+    .receipt-meta p {
+      margin: 2px 0;
+      text-align: right;
+      font-size: 0.95rem;
+    }
+  }
+
+  .receipt-parties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 24px;
+
+    .party-box {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 12px 16px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .party-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #555;
+      }
+    }
+  }
+
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 12px 8px;
+      text-align: left;
+    }
+
+    th {
+      border-bottom: 2px solid #000;
+      font-weight: 700;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .total-sum {
+      font-size: 1.2rem;
+      border-top: 2px solid #000;
+    }
+  }
+
+  .receipt-footer {
+    margin-top: 40px;
+
+    .legal-notice {
+      font-size: 0.85rem;
+      line-height: 1.4;
+      color: #333;
+      background: #f9f9f9;
+      padding: 12px;
+      border-left: 3px solid #000;
+    }
+
+    .signature-section {
+      margin-top: 60px;
+      display: flex;
+      justify-content: flex-end;
+
+      .signature-line {
+        width: 240px;
+        border-top: 1px solid #000;
+        padding-top: 6px;
+        text-align: center;
+        font-size: 0.85rem;
+      }
+    }
   }
 }
