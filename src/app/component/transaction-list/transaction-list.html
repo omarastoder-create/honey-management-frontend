@@ -1,29 +1,124 @@
-<!-- transaction-list.html -->
-<div class="container">
-  <h2>Verkaufshistorie</h2>
-  
-  @if (transactions().length === 0) {
-    <p>Keine Transaktionen gefunden.</p>
+<!-- src/app/component/transaction-list/transaction-list.html -->
+<div class="transaction-container no-print">
+  <div class="header-section">
+    <div>
+      <h2>Verkaufshistorie</h2>
+      <p class="subtitle">Übersicht aller abgeschlossenen Verkäufe (À titre personnel)</p>
+    </div>
+    <div class="stats-group">
+      <span class="badge">{{ transactions().length }} Verkäufe</span>
+      <span class="badge badge-highlight">Gesamt: €{{ totalRevenue() | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  @if (transactions().length > 0) {
+    <div class="table-responsive">
+      <table class="transaction-table">
+        <thead>
+          <tr>
+            <th>Beleg-Nr.</th>
+            <th>Datum & Uhrzeit</th>
+            <th>Positionen</th>
+            <th>Käufer</th>
+            <th>Verkäufer</th>
+            <th>Gesamtpreis</th>
+            <th class="text-right">Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of transactions(); track tx.transactionId) {
+            <tr>
+              <td class="text-muted">#{{ tx.transactionId | slice:0:8 }}</td>
+              <td class="date">{{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</td>
+              <td>
+                @for (item of tx.items; track $index) {
+                  <div class="item-line">
+                    <span class="unit-pill">{{ item.units }}x</span>
+                    <span class="fw-bold">{{ item.productDescription }}</span>
+                  </div>
+                }
+              </td>
+              <td>{{ tx.customerName }}</td>
+              <td>{{ tx.sellerName }}</td>
+              <td class="price">€{{ tx.totalPrice | number:'1.2-2' }}</td>
+              <td class="text-right">
+                <button type="button" class="btn-print" (click)="printReceipt(tx)">
+                  🖨️ Quittung
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   } @else {
-    <table class="transaction-table">
+    <div class="empty-state">
+      Noch keine Verkäufe in der Historie vorhanden.
+    </div>
+  }
+</div>
+
+<!-- DRUCK-LAYOUT (Nur beim Drucken sichtbar - Privatquittung / À titre personnel mit mehreren Positionen) -->
+@if (selectedTransaction(); as tx) {
+  <div class="print-only-receipt">
+    <div class="receipt-header">
+      <div>
+        <h1>QUITTUNG / REÇU</h1>
+        <p class="personal-tag">Verkauf auf persönlicher Basis (À titre personnel)</p>
+      </div>
+      <div class="receipt-meta">
+        <p><strong>Beleg-Nr.:</strong> #{{ tx.transactionId | slice:0:8 }}</p>
+        <p><strong>Datum:</strong> {{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</p>
+      </div>
+    </div>
+
+    <div class="receipt-parties">
+      <div class="party-box">
+        <span class="party-label">Verkäufer (Privatperson)</span>
+        <strong>{{ tx.sellerName }}</strong>
+        <span>Privater Erzeuger (Honey Management)</span>
+      </div>
+      <div class="party-box">
+        <span class="party-label">Käufer</span>
+        <strong>{{ tx.customerName }}</strong>
+      </div>
+    </div>
+
+    <table class="receipt-table">
       <thead>
         <tr>
-          <th>Transaktions-ID</th>
-          <th>Datum</th>
-          <th>Käufer (ID)</th>
-          <th>Gesamtpreis</th>
+          <th>Position / Beschreibung</th>
+          <th>Menge</th>
+          <th>Einzelpreis</th>
+          <th class="text-right">Teilbetrag</th>
         </tr>
       </thead>
       <tbody>
-        @for (tx of transactions(); track tx.transactionId) {
+        @for (item of tx.items; track $index) {
           <tr>
-            <td>{{ tx.transactionId }}</td>
-            <td>{{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</td>
-            <td>{{ tx.customerId }}</td>
-            <td>{{ tx.totalPrice | currency:'EUR' }}</td>
+            <td>{{ item.productDescription }}</td>
+            <td>{{ item.units }} Stk.</td>
+            <td>€{{ item.pricePerUnit | number:'1.2-2' }}</td>
+            <td class="text-right fw-bold">€{{ item.subTotal | number:'1.2-2' }}</td>
           </tr>
         }
       </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="text-right"><strong>Endbetrag (Netto = Brutto):</strong></td>
+          <td class="text-right total-sum"><strong>€{{ tx.totalPrice | number:'1.2-2' }}</strong></td>
+        </tr>
+      </tfoot>
     </table>
-  }
-</div>
+
+    <div class="receipt-footer">
+      <p class="legal-notice">
+        <strong>Hinweis:</strong> Privatverkauf (vente à titre personnel) aus privater Imkerei/Erzeugung. 
+        Es handelt sich nicht um ein gewerbliches Unternehmen. Daher erfolgt kein Ausweis von Mehrwertsteuer (TVA non applicable).
+      </p>
+      <div class="signature-section">
+        <div class="signature-line">Datum, Unterschrift Verkäufer</div>
+      </div>
+    </div>
+  </div>
+}

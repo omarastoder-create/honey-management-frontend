@@ -1,3 +1,4 @@
+// src/app/component/transaction-create/transaction-create.ts
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
@@ -23,36 +24,28 @@ export class TransactionCreateComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly transactionService = inject(TransactionService);
 
-  // Signale für die Dropdowns
   readonly sellers = signal<SellerResponse[]>([]);
   readonly customers = signal<CustomerResponse[]>([]);
   readonly products = signal<ProductResponse[]>([]);
-
-  // NEU: Signal für das Fehler-Feedback im UI (z.B. bei Bestandsüberschreitung)
   readonly errorMessage = signal<string | null>(null);
 
-  // Das Herzstück: Die Formular-Definition
-  transactionForm: FormGroup = this.fb.group({
+  readonly transactionForm: FormGroup = this.fb.group({
     sellerId: ['', Validators.required],
     customerId: ['', Validators.required],
-    items: this.fb.array([]) // Hier kommen dynamisch die Produkte rein
+    items: this.fb.array([], Validators.required)
   });
 
   ngOnInit(): void {
     this.sellerService.getAllSellers().subscribe(data => this.sellers.set(data));
     this.customerService.getAllCustomers().subscribe(data => this.customers.set(data));
     this.productService.getAllProducts().subscribe(data => this.products.set(data));
-    
-    // Wir fügen direkt eine leere Produkt-Zeile hinzu, damit der User starten kann
     this.addItem();
   }
 
-  // Hilfs-Getter, um im HTML sauber auf das Array zugreifen zu können
   get items(): FormArray {
     return this.transactionForm.get('items') as FormArray;
   }
 
-  // Methode, um eine neue Produkt-Zeile hinzuzufügen
   addItem(): void {
     const itemForm = this.fb.group({
       productId: ['', Validators.required],
@@ -61,7 +54,6 @@ export class TransactionCreateComponent implements OnInit {
     this.items.push(itemForm);
   }
 
-  // Methode, um eine Zeile zu entfernen
   removeItem(index: number): void {
     this.items.removeAt(index);
   }
@@ -72,18 +64,15 @@ export class TransactionCreateComponent implements OnInit {
       return;
     }
 
-    // Vorheriges Fehler-Feedback bei neuem Versuch zurücksetzen
     this.errorMessage.set(null);
-
     const payload = this.transactionForm.value;
     
-    this.transactionService.create(payload).subscribe({
+    // Angepasst an die Backend-Methodenbezeichnung (createSaleTransaction)
+    this.transactionService.createSaleTransaction(payload).subscribe({
       next: () => {
-        // Bei Erfolg (201 Created) zurück zur Liste navigieren
         this.router.navigate(['/transactions']);
       },
       error: (err) => {
-        // Backend-Fehlermeldung (z.B. "Nicht genug Bestand...") abfangen und im Signal speichern
         if (err.status === 400 && err.error?.message) {
           this.errorMessage.set(err.error.message);
         } else {
