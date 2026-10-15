@@ -1,1 +1,94 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  /* Honig & Natur Hauptfarben */
+  --bg-main: #f9f6f0;           /* Sanftes Creme für den Hintergrund */
+  --bg-card: #ffffff;           /* Reines Weiß für die schwebenden Cards */
+  --primary-honey: #e5a910;     /* Kräftiges Honiggold (ersetzt das Violett aus dem Bild) */
+  --primary-honey-light: #fef5d4;
+  --nature-green: #2d6a4f;      /* Sattes Waldgrün */
+  
+  /* Textfarben */
+  --text-dark: #1e241e;
+  --text-muted: #767c74;
+  --border-light: #ece6d9;
+
+  /* Pastell-Töne für die KPI-Boxen (wie im Bild, aber in Naturtönen) */
+  --kpi-amber-bg: #fff3d6;
+  --kpi-amber-icon: #d97706;
+  --kpi-green-bg: #dcfce7;
+  --kpi-green-icon: #15803d;
+  --kpi-terracotta-bg: #ffedd5;
+  --kpi-terracotta-icon: #c2410c;
+  --kpi-sage-bg: #e0f2fe;
+  --kpi-sage-icon: #0369a1;
+
+  /* Globale Schatten & Radien (für den weichen Look) */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --shadow-soft: 0 4px 20px rgba(45, 38, 20, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-dark);
+}
+
+/* Globale Card-Klasse für alle Komponenten (DRY-Prinzip) */
+.modern-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-light);
+  margin-bottom: 24px;
+}
+
+/* Globale Pastell-KPI-Karten */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.kpi-box {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &.honey { background: var(--kpi-amber-bg); .kpi-icon { background: var(--kpi-amber-icon); } }
+  &.nature { background: var(--kpi-green-bg); .kpi-icon { background: var(--kpi-green-icon); } }
+  &.pollen { background: var(--kpi-terracotta-bg); .kpi-icon { background: var(--kpi-terracotta-icon); } }
+  &.sky { background: var(--kpi-sage-bg); .kpi-icon { background: var(--kpi-sage-icon); } }
+
+  .kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .kpi-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+}

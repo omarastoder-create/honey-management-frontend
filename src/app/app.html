@@ -1,17 +1,63 @@
 <!-- src/app/app.html -->
-<header class="navbar">
-  <div class="logo">🐝 Honey Management</div>
-  <nav>
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Startseite</a>
-    <a routerLink="/sellers" routerLinkActive="active">Verkäufer</a>
-    <a routerLink="/customers" routerLinkActive="active">Käufer</a>
-    <a routerLink="/products" routerLinkActive="active">Produkte</a>
-    <a routerLink="/transactions" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Historie</a>
-    <a routerLink="/transactions/new" routerLinkActive="active">Neuer Verkauf</a>
-    <a routerLink="/expenses" routerLinkActive="active">Betriebsausgaben</a>
-  </nav>
-</header>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <lucide-icon [img]="icons.logo" [size]="22"></lucide-icon>
+      </div>
+      <span class="brand-name">HoneyApp</span>
+    </div>
 
-<main class="main-content">
-  <router-outlet></router-outlet>
-</main>
+    <nav class="nav-menu">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+        <lucide-icon [img]="icons.dashboard" [size]="20"></lucide-icon>
+        <span>Dashboard</span>
+      </a>
+      <a routerLink="/transactions/new" routerLinkActive="active" class="nav-item">
+        <lucide-icon [img]="icons.cart" [size]="20"></lucide-icon>
+        <span>Neuer Verkauf</span>
+      </a>
+      <a routerLink="/transactions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+        <lucide-icon [img]="icons.receipt" [size]="20"></lucide-icon>
+        <span>Verkäufe</span>
+      </a>
+      <a routerLink="/products" routerLinkActive="active" class="nav-item">
+        <lucide-icon [img]="icons.products" [size]="20"></lucide-icon>
+        <span>Produkte</span>
+      </a>
+      <a routerLink="/expenses" routerLinkActive="active" class="nav-item">
+        <lucide-icon [img]="icons.expenses" [size]="20"></lucide-icon>
+        <span>Ausgaben</span>
+      </a>
+      <a routerLink="/customers" routerLinkActive="active" class="nav-item">
+        <lucide-icon [img]="icons.customers" [size]="20"></lucide-icon>
+        <span>Kunden</span>
+      </a>
+      <a routerLink="/sellers" routerLinkActive="active" class="nav-item">
+        <lucide-icon [img]="icons.sellers" [size]="20"></lucide-icon>
+        <span>Verkäufer</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="topbar">
+      <h1 class="page-title">Imkerei Management</h1>
+      <div class="search-box">
+        <lucide-icon [img]="icons.search" [size]="18" class="search-icon"></lucide-icon>
+        <input type="text" placeholder="Suchen..." />
+      </div>
+      <div class="user-profile">
+        <div class="avatar">OR</div>
+        <div class="user-info">
+          <span class="user-name">Omar</span>
+          <span class="user-role">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

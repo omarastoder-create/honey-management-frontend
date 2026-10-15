@@ -1,5 +1,80 @@
-<!-- dashboard.html -->
+<!-- src/app/component/home/home.html -->
 <div class="dashboard-wrapper">
+  
+  <!-- Sektion 1: Neue Statistiken & KPIs -->
+  <section class="statistics-section">
+    <h2>Imkerei Übersicht</h2>
+
+    @if (isLoadingStats()) {
+      <p class="loading-text">Lade Statistiken...</p>
+    } @else if (stats(); as data) {
+      <!-- KPI Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-box modern-card">
+          <div class="kpi-icon revenue">
+            <lucide-icon [img]="icons.revenue" [size]="24"></lucide-icon>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-label">Gesamteinnahmen</span>
+            <span class="kpi-value">{{ data.totalRevenue | currency:'EUR':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-box modern-card">
+          <div class="kpi-icon expenses">
+            <lucide-icon [img]="icons.expenses" [size]="24"></lucide-icon>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-label">Gesamtausgaben</span>
+            <span class="kpi-value">{{ data.totalExpenses | currency:'EUR':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-box modern-card">
+          <div class="kpi-icon profit">
+            <lucide-icon [img]="icons.profit" [size]="24"></lucide-icon>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-label">Nettogewinn</span>
+            <span class="kpi-value" [class.negative]="data.netProfit < 0">
+              {{ data.netProfit | currency:'EUR':'symbol':'1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Performer Section -->
+      <div class="performer-grid">
+        <div class="modern-card performer-card">
+          <h3>Bester Kunde (Monat)</h3>
+          <p class="performer-name">{{ data.topCustomerMonth?.name ?? 'Keine Daten' }}</p>
+          <span class="performer-value">{{ (data.topCustomerMonth?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <div class="modern-card performer-card">
+          <h3>Bester Kunde (Jahr)</h3>
+          <p class="performer-name">{{ data.topCustomerYear?.name ?? 'Keine Daten' }}</p>
+          <span class="performer-value">{{ (data.topCustomerYear?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <div class="modern-card performer-card">
+          <h3>Bester Verkäufer (Monat)</h3>
+          <p class="performer-name">{{ data.topSellerMonth?.name ?? 'Keine Daten' }}</p>
+          <span class="performer-value">{{ (data.topSellerMonth?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <div class="modern-card performer-card">
+          <h3>Bester Verkäufer (Jahr)</h3>
+          <p class="performer-name">{{ data.topSellerYear?.name ?? 'Keine Daten' }}</p>
+          <span class="performer-value">{{ (data.topSellerYear?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- Sektion 2: Deine bestehenden Featured Products -->
   <h2>Featured Products</h2>
   
   <div class="orbit-container">

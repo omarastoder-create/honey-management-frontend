@@ -1,8 +1,10 @@
-/* src/app/component/home/home.scss */
 .dashboard-wrapper {
   padding: 2rem;
   background-color: #fefcf7;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
 }
 
 h2 {
@@ -11,8 +13,134 @@ h2 {
   border-bottom: 3px solid #f3c623;
   display: inline-block;
   padding-bottom: 0.5rem;
+  font-size: 1.5rem;
 }
 
+.loading-text {
+  color: #735a1f;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+/* --- KPI GRID STYLES --- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.modern-card {
+  background: #fff;
+  border: 1px solid #e8e0c5;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: #f3c623;
+  }
+}
+
+.kpi-box {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+
+  .kpi-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.revenue {
+      background-color: rgba(243, 198, 35, 0.15);
+      color: #d4a017;
+    }
+
+    &.expenses {
+      background-color: rgba(229, 115, 115, 0.12);
+      color: #d32f2f;
+    }
+
+    &.profit {
+      background-color: rgba(76, 175, 80, 0.12);
+      color: #388e3c;
+    }
+  }
+
+  .kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .kpi-label {
+      font-size: 0.85rem;
+      color: #7d796e;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #2c2a24;
+
+      &.negative {
+        color: #d32f2f;
+      }
+    }
+  }
+}
+
+/* --- PERFORMER GRID STYLES --- */
+.performer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.performer-card {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  h3 {
+    font-size: 0.9rem;
+    color: #7d796e;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .performer-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #2c2a24;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .performer-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #735a1f;
+  }
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid #e8e0c5;
+  margin: 1rem 0;
+}
+
+/* --- ORBIT CAROUSEL STYLES (Dein Original) --- */
 .orbit-container {
   width: 100%;
   overflow: hidden;
@@ -40,7 +168,6 @@ h2 {
 .orbit-track {
   display: flex;
   width: max-content;
-  /* Duration increased from 30s to 55s for a smoother, slower rotation */
   animation: orbit 55s linear infinite;
 
   &:hover {
@@ -55,7 +182,6 @@ h2 {
 }
 
 .product-card {
-  /* Card width increased from 250px to 320px */
   width: 320px;
   flex-shrink: 0;
   background: #fff;
@@ -73,7 +199,6 @@ h2 {
 
   img {
     width: 100%;
-    /* Image height increased from 180px to 220px */
     height: 220px;
     object-fit: cover;
     display: block;
@@ -116,4 +241,71 @@ h2 {
 @keyframes orbit {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+.statistics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.performer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.performer-card {
+  background: #ffffff;
+  border: 1px solid #e8e0c5;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: #f3c623;
+    box-shadow: 0 6px 16px rgba(243, 198, 35, 0.15);
+  }
+
+  h3 {
+    font-size: 0.85rem;
+    color: #8c8574;
+    margin: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .performer-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c2a24;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .performer-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #967215;
+  }
+}
+
+.section-divider {
+  border: none;
+  border-top: 2px dashed #e8e0c5;
+  margin: 1.5rem 0;
 }
