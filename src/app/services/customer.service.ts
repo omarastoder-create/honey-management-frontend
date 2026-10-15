@@ -1,5 +1,6 @@
+// src/app/services/customer.service.ts
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export interface CustomerResponse {
@@ -7,28 +8,34 @@ export interface CustomerResponse {
   name: string;
   familyName: string;
   description: string;
-  phoneNumber: string;  
+  phoneNumber: string;
+  email?: string;
 }
 
 export interface CustomerRequest {
-    name: string;
-    familyName: string;
-    description: string;
-    phoneNumber: string;  
-    }           
+  name: string;
+  familyName: string;
+  description: string;
+  phoneNumber: string;
+  email?: string;
+}
+
 @Injectable({
- providedIn: 'root'
+  providedIn: 'root'
 })
-
 export class CustomerService {
-    private readonly apiUrl = 'http://localhost:8080/api/v1/customers';
-    constructor(private http: HttpClient) {}
+  private readonly apiUrl = 'http://localhost:8080/api/v1/customers';
+  private readonly http = inject(HttpClient);
 
-    getAllCustomers(): Observable<CustomerResponse[]> {
-        return this.http.get<CustomerResponse[]>(this.apiUrl);
-    }
+  getAllCustomers(): Observable<CustomerResponse[]> {
+    return this.http.get<CustomerResponse[]>(this.apiUrl);
+  }
 
-    createCustomer(request: CustomerRequest): Observable<CustomerResponse> {
-        return this.http.post<CustomerResponse>(this.apiUrl, request);
-    }
+  createCustomer(request: CustomerRequest): Observable<CustomerResponse> {
+    return this.http.post<CustomerResponse>(this.apiUrl, request);
+  }
+
+  updateCustomer(id: string, request: CustomerRequest): Observable<CustomerResponse> {
+    return this.http.put<CustomerResponse>(`${this.apiUrl}/${id}`, request);
+  }
 }

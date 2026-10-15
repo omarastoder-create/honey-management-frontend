@@ -10,9 +10,20 @@
       <input type="text" formControlName="name" placeholder="Vorname..." class="form-input">
       <input type="text" formControlName="familyName" placeholder="Nachname..." class="form-input">
       <input type="text" formControlName="description" placeholder="Beschreibung (z.B. B2B Großkunde)..." class="form-input">
-      <input type="text" formControlName="phoneNumber" placeholder="Telefon (z.B. +352...)" class="form-input">
+      
+      <div class="phone-group">
+        <select formControlName="prefix" class="form-select prefix-select">
+          @for (c of countryCodes; track c.code) {
+            <option [value]="c.code">{{ c.label }}</option>
+          }
+        </select>
+        <input type="text" formControlName="phoneNumber" placeholder="Rufnummer..." class="form-input phone-input">
+      </div>
+
+      <input type="email" formControlName="email" placeholder="E-Mail-Adresse..." class="form-input">
+      
+      <button type="submit" [disabled]="customerForm.invalid" class="btn-primary">Käufer Hinzufügen</button>
     </div>
-    <button type="submit" [disabled]="customerForm.invalid" class="btn-primary">Käufer Hinzufügen</button>
   </form>
   
   <table class="honey-table">
@@ -21,8 +32,6 @@
         <th>Vorname</th>
         <th>Nachname</th>
         <th>Beschreibung</th>
-        <th>Telefon</th>
-        <th>Kunden-ID (UUID)</th>
         <th>Aktionen</th>
       </tr>
     </thead>
@@ -32,17 +41,76 @@
           <td class="fw-bold">{{ customer.name }}</td>
           <td class="fw-bold">{{ customer.familyName }}</td>
           <td>{{ customer.description }}</td>
-          <td>{{ customer.phoneNumber }}</td>
-          <td class="text-muted">{{ customer.customerId }}</td>
           <td>
-            <button class="btn-action">Details</button>
+            <button class="btn-action" (click)="showDetails(customer)">Details</button>
           </td>
         </tr>
       } @empty {
         <tr>
-          <td colspan="6" class="empty-state">Keine Käufer in der Datenbank gefunden.</td>
+          <td colspan="4" class="empty-state">Keine Käufer in der Datenbank gefunden.</td>
         </tr>
       }
     </tbody>
   </table>
+
+  <!-- Profildetails & Update Modal -->
+ <!-- Profildetails & Update Modal -->
+  @if (selectedCustomer(); as cust) {
+    <div class="modal-backdrop" (click)="closeDetails()">
+      <div class="modal-content modern-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditing() ? 'Kunden bearbeiten' : 'Kundenprofil' }}</h3>
+          <button class="btn-close" (click)="closeDetails()">&times;</button>
+        </div>
+
+        @if (!isEditing()) {
+          <div class="profile-body">
+            <div class="profile-avatar">{{ cust.name[0] }}{{ cust.familyName[0] }}</div>
+            <div class="profile-info">
+              <h4>{{ cust.name }} {{ cust.familyName }}</h4>
+              <p class="profile-desc">{{ cust.description }}</p>
+              <div class="profile-details-grid">
+                <div><strong>Telefon:</strong> {{ cust.phoneNumber }}</div>
+                <div><strong>E-Mail:</strong> {{ cust.email ?? 'Nicht hinterlegt' }}</div>
+                <div><strong>Kunden-ID:</strong> <code>{{ cust.customerId }}</code></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer-actions">
+            <button class="btn-action btn-update" (click)="startUpdate()">Update</button>
+          </div>
+        } @else {
+          <form [formGroup]="editForm" (ngSubmit)="saveUpdate()" class="edit-form">
+            <div class="edit-grid">
+              <label>Vorname</label>
+              <input type="text" formControlName="name" class="form-input">
+
+              <label>Nachname</label>
+              <input type="text" formControlName="familyName" class="form-input">
+
+              <label>Beschreibung</label>
+              <input type="text" formControlName="description" class="form-input">
+
+              <label>Ländervorwahl</label>
+              <select formControlName="prefix" class="form-select">
+                @for (c of countryCodes; track c.code) {
+                  <option [value]="c.code">{{ c.label }}</option>
+                }
+              </select>
+
+              <label>Rufnummer</label>
+              <input type="text" formControlName="phoneNumber" class="form-input" placeholder="Rufnummer...">
+
+              <label>E-Mail</label>
+              <input type="email" formControlName="email" class="form-input">
+            </div>
+            <div class="modal-footer-actions">
+              <button type="button" class="btn-action" (click)="cancelUpdate()">Abbrechen</button>
+              <button type="submit" [disabled]="editForm.invalid" class="btn-primary">Speichern</button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  }
 </div>
