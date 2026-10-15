@@ -6,6 +6,7 @@ import { HomeComponent } from './component/home/home';
 import { ProductList } from './component/product-list/product-list';
 import { TransactionListComponent } from './component/transaction-list/transaction-list';
 import { TransactionCreateComponent } from './component/transaction-create/transaction-create';
+import { ExpenseListComponent } from './component/expense-list/expense-list';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'Startseite | Honey Management', pathMatch: 'full' },
@@ -14,5 +15,6 @@ export const routes: Routes = [
   { path: 'products', component: ProductList, title: 'Produkte | Honey Management'},
   { path: 'transactions', component: TransactionListComponent, title: 'Historie | Honey Management' },
   { path: 'transactions/new', component: TransactionCreateComponent, title: 'Neuer Verkauf | Honey Management' },
+  { path: 'expenses', component: ExpenseListComponent },
   { path: '**', redirectTo: '' }
 ];
