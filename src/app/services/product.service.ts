@@ -1,35 +1,47 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { apiUrl } from '../core/api';
 
 export interface ProductRequest {
-    description: string;
-    pricePerUnit: number;
-    unitsToSell: number;
-    dateOfHarvest: string; // Geändert zu string
+  readonly description: string;
+  readonly pricePerUnit: number;
+  readonly unitsToSell: number;
+  readonly dateOfHarvest: string;
 }
 
 export interface ProductResponse {
-    productId: string;
-    description: string;
-    pricePerUnit: number;
-    unitsToSell: number;
-    dateOfHarvest: string; // Geändert zu string
-    imageUrl: string | null;
+  readonly productId: string;
+  readonly description: string;
+  readonly pricePerUnit: number;
+  readonly unitsToSell: number;
+  readonly dateOfHarvest: string;
+  /** e.g. /images/<uuid>.jpg - load it with fileUrl() */
+  readonly imageUrl: string | null;
 }
 
-@Injectable({
-    providedIn: 'root'
-})
+/** Below this many units a product counts as "almost sold out". */
+export const LOW_STOCK_THRESHOLD = 5;
+
+@Injectable({ providedIn: 'root' })
 export class ProductService {
-    private readonly apiUrl = 'http://localhost:8080/api/v1/products';
-    private readonly http = inject(HttpClient);
-    
-    getAllProducts(): Observable<ProductResponse[]> {
-        return this.http.get<ProductResponse[]>(this.apiUrl);
-    }
+  private readonly http = inject(HttpClient);
+  private readonly url = apiUrl('products');
 
-  createProduct(formData: FormData): Observable<ProductResponse> {
-  return this.http.post<ProductResponse>(this.apiUrl, formData);
-}
+  getAllProducts(): Observable<ProductResponse[]> {
+    return this.http.get<ProductResponse[]>(this.url);
+  }
+
+  /**
+   * The backend expects multipart/form-data with a JSON part "product"
+   * and an optional file part "image".
+   */
+  createProduct(request: ProductRequest, image: File | null): Observable<ProductResponse> {
+    const form = new FormData();
+    form.append('product', new Blob([JSON.stringify(request)], { type: 'application/json' }));
+    if (image) {
+      form.append('image', image);
+    }
+    return this.http.post<ProductResponse>(this.url, form);
+  }
 }

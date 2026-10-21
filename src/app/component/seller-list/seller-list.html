@@ -1,37 +1,87 @@
-<!-- src/app/component/seller-list/seller-list.html -->
-<div class="seller-container">
-  <div class="header-section">
-    <h2>Verkäufer-Übersicht</h2>
-    <span class="badge">Gesamt: {{ sellers().length }}</span>
-  </div>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Verkäufer</h1>
+      <p class="page-subtitle">Wer aus der Familie verkauft – mit Umsatz pro Person.</p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <lucide-icon [img]="icons.plus" [size]="18" /> Neuer Verkäufer
+      </button>
+    </div>
+  </header>
 
-  <form [formGroup]="sellerForm" (ngSubmit)="onSubmit()" class="add-seller-form">
-    <input type="text" formControlName="name" placeholder="Neuer Verkäufername..." class="form-input">
-    <button type="submit" [disabled]="sellerForm.invalid" class="btn-primary">Hinzufügen</button>
-  </form>
-  
-  <table class="honey-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Verkäufer-ID (UUID)</th>
-        <th>Aktionen</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (seller of sellers(); track seller.sellerId) {
-        <tr>
-          <td class="fw-bold">{{ seller.name }}</td>
-          <td class="text-muted">{{ seller.sellerId }}</td>
-          <td>
-            <button class="btn-action">Details</button>
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="3" class="empty-state">Keine Verkäufer in der Datenbank gefunden.</td>
-        </tr>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  <section class="grid grid-cards">
+    @if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card skeleton" style="height: 180px"></div>
       }
-    </tbody>
-  </table>
+    }
+    @for (s of ranked(); track s.sellerId; let rank = $index) {
+      <article class="card seller">
+        <div class="seller-head">
+          <span [class]="'avatar avatar-lg ' + avatarTone(s.name)">{{ initials(s.name) }}</span>
+          @if (rank === 0 && statsFor(s.name).revenue > 0) {
+            <span class="badge badge-honey">Top-Verkäufer</span>
+          }
+        </div>
+        <h3 class="seller-name">{{ s.name }}</h3>
+        <span class="faint small">
+          @if (statsFor(s.name).lastSale; as last) {
+            Letzter Verkauf {{ last | date: 'd. MMM y' }}
+          } @else {
+            Noch keine Verkäufe
+          }
+        </span>
+        <div class="seller-stats">
+          <div>
+            <span class="label">Verkäufe</span>
+            <span class="seller-value">{{ statsFor(s.name).sales }}</span>
+          </div>
+          <div>
+            <span class="label">Umsatz</span>
+            <span class="seller-value">{{ statsFor(s.name).revenue | currency }}</span>
+          </div>
+        </div>
+      </article>
+    } @empty {
+      @if (!loading()) {
+        <div class="card empty span-all">
+          <span class="empty-icon"><lucide-icon [img]="icons.store" [size]="26" /></span>
+          <span class="empty-title">Noch keine Verkäufer</span>
+          <span class="empty-text">Lege an, wer in der Familie Honig verkauft.</span>
+          <button type="button" class="btn btn-primary btn-sm" (click)="openModal()">Neuer Verkäufer</button>
+        </div>
+      }
+    }
+  </section>
 </div>
+
+<app-modal [open]="modalOpen()" title="Neuer Verkäufer" subtitle="Namen müssen eindeutig sein." (closed)="modalOpen.set(false)">
+  <form id="sellerForm" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field">
+      <span class="label">Name <span class="req">*</span></span>
+      <input class="input" formControlName="name" placeholder="z. B. Omar" autocomplete="off" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <span class="field-error">{{ form.controls.name.errors?.['server'] ?? 'Bitte mindestens 2 Zeichen eingeben.' }}</span>
+      }
+    </label>
+    @if (formError()) {
+      <div class="alert alert-error" style="margin-top: 14px">{{ formError() }}</div>
+    }
+  </form>
+
+  <div modal-footer class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modalOpen.set(false)">Abbrechen</button>
+    <button type="submit" form="sellerForm" class="btn btn-primary" [disabled]="saving()">
+      @if (saving()) {
+        <span class="spinner"></span>
+      }
+      Verkäufer anlegen
+    </button>
+  </div>
+</app-modal>

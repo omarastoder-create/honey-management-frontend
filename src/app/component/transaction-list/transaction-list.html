@@ -1,67 +1,141 @@
-<!-- src/app/component/transaction-list/transaction-list.html -->
-<div class="transaction-container no-print">
-  <div class="header-section">
+<div class="page no-print">
+  <header class="page-header">
     <div>
-      <h2>Verkaufshistorie</h2>
-      <p class="subtitle">Übersicht aller abgeschlossenen Verkäufe (À titre personnel)</p>
+      <h1 class="page-title">Verkäufe</h1>
+      <p class="page-subtitle">Alle abgeschlossenen Verkäufe – mit Quittung zum Ausdrucken.</p>
     </div>
-    <div class="stats-group">
-      <span class="badge">{{ transactions().length }} Verkäufe</span>
-      <span class="badge badge-highlight">Gesamt: €{{ totalRevenue() | number:'1.2-2' }}</span>
+    <div class="page-actions">
+      <a routerLink="/transactions/new" class="btn btn-primary">
+        <lucide-icon [img]="icons.plus" [size]="18" /> Neuer Verkauf
+      </a>
     </div>
-  </div>
+  </header>
 
-  @if (transactions().length > 0) {
-    <div class="table-responsive">
-      <table class="transaction-table">
-        <thead>
-          <tr>
-            <th>Beleg-Nr.</th>
-            <th>Datum & Uhrzeit</th>
-            <th>Positionen</th>
-            <th>Käufer</th>
-            <th>Verkäufer</th>
-            <th>Gesamtpreis</th>
-            <th class="text-right">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (tx of transactions(); track tx.transactionId) {
+  <section class="grid grid-stats">
+    <div class="card stat">
+      <span class="stat-icon tone-honey"><lucide-icon [img]="icons.receipt" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Verkäufe</div>
+        <div class="stat-value">{{ filtered().length }}</div>
+        <div class="stat-hint">{{ unitsSold() }} Gläser verkauft</div>
+      </div>
+    </div>
+    <div class="card stat">
+      <span class="stat-icon tone-green"><lucide-icon [img]="icons.receipt" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Umsatz</div>
+        <div class="stat-value">{{ revenue() | currency }}</div>
+        <div class="stat-hint">im gewählten Zeitraum</div>
+      </div>
+    </div>
+    <div class="card stat">
+      <span class="stat-icon tone-blue"><lucide-icon [img]="icons.receipt" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Ø pro Verkauf</div>
+        <div class="stat-value">{{ average() | currency }}</div>
+        <div class="stat-hint">Durchschnittlicher Warenkorb</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="search">
+        <lucide-icon [img]="icons.search" [size]="16" />
+        <input
+          class="input"
+          type="search"
+          placeholder="Kunde, Verkäufer, Produkt, Beleg-Nr. …"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </div>
+      <div class="segmented">
+        <button type="button" [class.active]="period() === 'all'" (click)="period.set('all')">Alle</button>
+        <button type="button" [class.active]="period() === 'year'" (click)="period.set('year')">Dieses Jahr</button>
+        <button type="button" [class.active]="period() === 'month'" (click)="period.set('month')">Dieser Monat</button>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="card-body"><div class="alert alert-error">{{ error() }}</div></div>
+    } @else if (loading()) {
+      <div class="card-body">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="skeleton" style="height: 48px; margin-bottom: 10px"></div>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td class="text-muted">#{{ tx.transactionId | slice:0:8 }}</td>
-              <td class="date">{{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</td>
-              <td>
-                @for (item of tx.items; track item.itemId) {
-                  <div class="item-line">
-                    <span class="unit-pill">{{ item.units }}x</span>
-                    <span class="fw-bold">{{ item.productDescription }}</span>
-                    @if (item.isGift) {
-                      <span class="badge">🎁 Geschenk</span>
+              <th>Kunde</th>
+              <th>Positionen</th>
+              <th>Verkäufer</th>
+              <th>Datum</th>
+              <th class="num">Betrag</th>
+              <th class="actions"><span class="sr-only">Aktionen</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tx of filtered(); track tx.transactionId) {
+              <tr>
+                <td>
+                  <div class="person">
+                    <span [class]="'avatar ' + avatarTone(tx.customerName)">{{ initials(tx.customerName) }}</span>
+                    <span class="person-text">
+                      <span class="person-name">{{ tx.customerName }}</span>
+                      <span class="person-meta mono">#{{ tx.transactionId | slice: 0 : 8 }}</span>
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="items">
+                    @for (item of tx.items; track item.itemId) {
+                      <span class="badge" [class.badge-honey]="item.isGift">
+                        @if (item.isGift) {
+                          <lucide-icon [img]="icons.gift" [size]="12" />
+                        }
+                        {{ item.units }}× {{ item.productDescription }}
+                      </span>
                     }
                   </div>
-                }
-              </td>
-              <td>{{ tx.customerName }}</td>
-              <td>{{ tx.sellerName }}</td>
-              <td class="price">€{{ tx.totalPrice | number:'1.2-2' }}</td>
-              <td class="text-right">
-                <button type="button" class="btn-print" (click)="printReceipt(tx)">
-                  🖨️ Quittung
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  } @else {
-    <div class="empty-state">
-      Noch keine Verkäufe in der Historie vorhanden.
-    </div>
-  }
+                </td>
+                <td class="muted">{{ tx.sellerName }}</td>
+                <td class="muted nowrap">{{ tx.saleDate | date: 'dd.MM.yyyy, HH:mm' }}</td>
+                <td class="num strong">{{ tx.totalPrice | currency }}</td>
+                <td class="actions">
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="printReceipt(tx)" title="Quittung drucken">
+                    <lucide-icon [img]="icons.print" [size]="16" /> Quittung
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="empty">
+                    <span class="empty-icon"><lucide-icon [img]="icons.receipt" [size]="26" /></span>
+                    @if (transactions().length) {
+                      <span class="empty-title">Keine Treffer</span>
+                      <span class="empty-text">Kein Verkauf passt zu Suche und Zeitraum.</span>
+                    } @else {
+                      <span class="empty-title">Noch keine Verkäufe</span>
+                      <span class="empty-text">Erfasse deinen ersten Verkauf – er erscheint dann hier.</span>
+                      <a routerLink="/transactions/new" class="btn btn-primary btn-sm">Neuer Verkauf</a>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
 </div>
 
-<!-- DRUCK-LAYOUT (Nur beim Drucken sichtbar - Privatquittung / À titre personnel mit mehreren Positionen) -->
+<!-- Print layout: only visible when printing (private sale / à titre personnel) -->
 @if (selectedTransaction(); as tx) {
   <div class="print-only-receipt">
     <div class="receipt-header">
@@ -70,8 +144,8 @@
         <p class="personal-tag">Verkauf auf persönlicher Basis (À titre personnel)</p>
       </div>
       <div class="receipt-meta">
-        <p><strong>Beleg-Nr.:</strong> #{{ tx.transactionId | slice:0:8 }}</p>
-        <p><strong>Datum:</strong> {{ tx.saleDate | date:'dd.MM.yyyy HH:mm' }}</p>
+        <p><strong>Beleg-Nr.:</strong> #{{ tx.transactionId | slice: 0 : 8 }}</p>
+        <p><strong>Datum:</strong> {{ tx.saleDate | date: 'dd.MM.yyyy HH:mm' }}</p>
       </div>
     </div>
 
@@ -106,22 +180,22 @@
               }
             </td>
             <td>{{ item.units }} Stk.</td>
-            <td>€{{ item.pricePerUnit | number:'1.2-2' }}</td>
-            <td class="text-right fw-bold">€{{ item.subtotalPrice | number:'1.2-2' }}</td>
+            <td>{{ item.pricePerUnit | currency }}</td>
+            <td class="text-right strong">{{ item.subtotalPrice | currency }}</td>
           </tr>
         }
       </tbody>
       <tfoot>
         <tr>
           <td colspan="3" class="text-right"><strong>Endbetrag (Netto = Brutto):</strong></td>
-          <td class="text-right total-sum"><strong>€{{ tx.totalPrice | number:'1.2-2' }}</strong></td>
+          <td class="text-right total-sum"><strong>{{ tx.totalPrice | currency }}</strong></td>
         </tr>
       </tfoot>
     </table>
 
     <div class="receipt-footer">
       <p class="legal-notice">
-        <strong>Hinweis:</strong> Privatverkauf (vente à titre personnel) aus privater Imkerei/Erzeugung. 
+        <strong>Hinweis:</strong> Privatverkauf (vente à titre personnel) aus privater Imkerei/Erzeugung.
         Es handelt sich nicht um ein gewerbliches Unternehmen. Daher erfolgt kein Ausweis von Mehrwertsteuer (TVA non applicable).
       </p>
       <div class="signature-section">

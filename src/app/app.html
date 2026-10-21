@@ -1,63 +1,83 @@
-<!-- src/app/app.html -->
-<div class="app-layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-logo">
-        <lucide-icon [img]="icons.logo" [size]="22"></lucide-icon>
-      </div>
+<div class="shell">
+  <!-- Mobile top bar -->
+  <header class="mobile-bar no-print">
+    <button type="button" class="btn btn-ghost btn-icon" (click)="mobileNavOpen.set(true)" aria-label="Menü öffnen">
+      <lucide-icon [img]="icons.menu" [size]="20" />
+    </button>
+    <a routerLink="/" class="brand">
+      <span class="brand-logo"><lucide-icon [img]="icons.logo" [size]="18" /></span>
       <span class="brand-name">HoneyApp</span>
+    </a>
+    <a routerLink="/transactions/new" class="btn btn-primary btn-icon btn-sm" aria-label="Neuer Verkauf">
+      <lucide-icon [img]="icons.plus" [size]="18" />
+    </a>
+  </header>
+
+  @if (mobileNavOpen()) {
+    <div class="scrim no-print" (click)="mobileNavOpen.set(false)"></div>
+  }
+
+  <aside class="sidebar no-print" [class.open]="mobileNavOpen()">
+    <div class="sidebar-top">
+      <a routerLink="/" class="brand">
+        <span class="brand-logo"><lucide-icon [img]="icons.logo" [size]="20" /></span>
+        <span class="brand-text">
+          <span class="brand-name">HoneyApp</span>
+          <span class="brand-tag">Imkerei-Verwaltung</span>
+        </span>
+      </a>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm close-nav" (click)="mobileNavOpen.set(false)" aria-label="Menü schließen">
+        <lucide-icon [img]="icons.close" [size]="18" />
+      </button>
     </div>
 
-    <nav class="nav-menu">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
-        <lucide-icon [img]="icons.dashboard" [size]="20"></lucide-icon>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/transactions/new" routerLinkActive="active" class="nav-item">
-        <lucide-icon [img]="icons.cart" [size]="20"></lucide-icon>
-        <span>Neuer Verkauf</span>
-      </a>
-      <a routerLink="/transactions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
-        <lucide-icon [img]="icons.receipt" [size]="20"></lucide-icon>
-        <span>Verkäufe</span>
-      </a>
-      <a routerLink="/products" routerLinkActive="active" class="nav-item">
-        <lucide-icon [img]="icons.products" [size]="20"></lucide-icon>
-        <span>Produkte</span>
-      </a>
-      <a routerLink="/expenses" routerLinkActive="active" class="nav-item">
-        <lucide-icon [img]="icons.expenses" [size]="20"></lucide-icon>
-        <span>Ausgaben</span>
-      </a>
-      <a routerLink="/customers" routerLinkActive="active" class="nav-item">
-        <lucide-icon [img]="icons.customers" [size]="20"></lucide-icon>
-        <span>Kunden</span>
-      </a>
-      <a routerLink="/sellers" routerLinkActive="active" class="nav-item">
-        <lucide-icon [img]="icons.sellers" [size]="20"></lucide-icon>
-        <span>Verkäufer</span>
-      </a>
+    <a routerLink="/transactions/new" routerLinkActive="active" class="btn btn-primary btn-block new-sale">
+      <lucide-icon [img]="icons.plus" [size]="18" />
+      Neuer Verkauf
+    </a>
+
+    <nav class="nav">
+      @for (group of navGroups; track group.title) {
+        <div class="nav-group">
+          <span class="nav-title">{{ group.title }}</span>
+          @for (item of group.items; track item.path) {
+            <a
+              class="nav-item"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            >
+              <lucide-icon [img]="item.icon" [size]="18" />
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="user">
+        <span class="avatar tone-green">OR</span>
+        <span class="user-text">
+          <span class="user-name">Omar</span>
+          <span class="user-role">Imker · Admin</span>
+        </span>
+      </div>
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon btn-sm"
+        (click)="theme.toggle()"
+        [attr.aria-label]="theme.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design'"
+        [title]="theme.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design'"
+      >
+        <lucide-icon [img]="theme.theme() === 'dark' ? icons.sun : icons.moon" [size]="18" />
+      </button>
+    </div>
   </aside>
 
-  <div class="main-wrapper">
-    <header class="topbar">
-      <h1 class="page-title">Imkerei Management</h1>
-      <div class="search-box">
-        <lucide-icon [img]="icons.search" [size]="18" class="search-icon"></lucide-icon>
-        <input type="text" placeholder="Suchen..." />
-      </div>
-      <div class="user-profile">
-        <div class="avatar">OR</div>
-        <div class="user-info">
-          <span class="user-name">Omar</span>
-          <span class="user-role">Admin</span>
-        </div>
-      </div>
-    </header>
-
-    <main class="content-area">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
+  <main class="main">
+    <router-outlet />
+  </main>
 </div>
+
+<app-toast-container class="no-print" />

@@ -1,21 +1,19 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TransactionList } from './transaction-list';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { TransactionListComponent } from './transaction-list';
 
-describe('TransactionList', () => {
-  let component: TransactionList;
-  let fixture: ComponentFixture<TransactionList>;
-
-  beforeEach(async () => {
+describe('TransactionListComponent', () => {
+  it('should create', async () => {
     await TestBed.configureTestingModule({
-      imports: [TransactionList],
+      imports: [TransactionListComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TransactionList);
-    component = fixture.componentInstance;
+    const fixture = TestBed.createComponent(TransactionListComponent);
     await fixture.whenStable();
-  });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });

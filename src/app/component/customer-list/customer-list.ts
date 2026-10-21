@@ -1,148 +1,167 @@
-// src/app/component/customer-list/customer-list.ts
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
-import { CustomerService, CustomerResponse } from '../../services/customer.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { LucideAngularModule, Mail, Pencil, Phone, Search, UserPlus, Users } from 'lucide-angular';
+import { avatarTone, initials, matchesSearch } from '../../core/format';
+import { applyFieldErrors, errorMessage } from '../../core/http-error';
+import { ToastService } from '../../core/toast.service';
+import { CustomerRequest, CustomerResponse, CustomerService } from '../../services/customer.service';
+import { ModalComponent } from '../../shared/modal/modal';
+
+type Mode = 'create' | 'view' | 'edit';
+
+const COUNTRY_CODES = [
+  { code: '+352', label: 'LU +352' },
+  { code: '+49', label: 'DE +49' },
+  { code: '+33', label: 'FR +33' },
+  { code: '+32', label: 'BE +32' },
+  { code: '+41', label: 'CH +41' }
+];
 
 @Component({
   selector: 'app-customer-list',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LucideAngularModule, ModalComponent],
   templateUrl: './customer-list.html',
   styleUrl: './customer-list.scss'
 })
 export class CustomerListComponent implements OnInit {
-  private customerService = inject(CustomerService);
+  private readonly customerService = inject(CustomerService);
+  private readonly toast = inject(ToastService);
 
-  customers = signal<CustomerResponse[]>([]);
-  selectedCustomer = signal<CustomerResponse | null>(null);
-  isEditing = signal<boolean>(false);
+  protected readonly customers = signal<CustomerResponse[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  protected readonly search = signal('');
 
-  countryCodes = [
-    { code: '+352', label: 'LU (+352)' },
-    { code: '+49', label: 'DE (+49)' },
-    { code: '+33', label: 'FR (+33)' },
-    { code: '+32', label: 'BE (+32)' },
-    { code: '+41', label: 'CH (+41)' }
-  ];
+  protected readonly mode = signal<Mode | null>(null);
+  protected readonly selected = signal<CustomerResponse | null>(null);
+  protected readonly saving = signal(false);
+  protected readonly formError = signal<string | null>(null);
 
-  customerForm = new FormGroup({
-    name: new FormControl('', [Validators.required, Validators.minLength(2)]),
-    familyName: new FormControl('', [Validators.required, Validators.minLength(2)]),
-    description: new FormControl('', [Validators.required, Validators.minLength(3)]),
-    prefix: new FormControl('+352', [Validators.required]),
-    phoneNumber: new FormControl('', [Validators.required, Validators.pattern(/^\d{6,15}$/)]),
-    email: new FormControl('', [Validators.email])
+  protected readonly icons = { search: Search, add: UserPlus, phone: Phone, mail: Mail, edit: Pencil, users: Users };
+  protected readonly countryCodes = COUNTRY_CODES;
+  protected readonly initials = initials;
+  protected readonly avatarTone = avatarTone;
+
+  protected readonly form = new FormGroup({
+    name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    familyName: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    description: new FormControl('', { nonNullable: true }),
+    prefix: new FormControl('+352', { nonNullable: true }),
+    // Digits, spaces allowed while typing ("621 123 456")
+    phoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d[\d ]{4,16}$/)] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.email] })
   });
 
-  editForm = new FormGroup({
-    name: new FormControl('', [Validators.required, Validators.minLength(2)]),
-    familyName: new FormControl('', [Validators.required, Validators.minLength(2)]),
-    description: new FormControl('', [Validators.required, Validators.minLength(3)]),
-    prefix: new FormControl('+352', [Validators.required]),
-    phoneNumber: new FormControl('', [Validators.required, Validators.pattern(/^\d{6,15}$/)]),
-    email: new FormControl('', [Validators.email])
+  protected readonly filtered = computed(() =>
+    this.customers()
+      .filter(c => matchesSearch(this.search(), c.name, c.familyName, c.phoneNumber, c.email, c.description))
+      .sort((a, b) => `${a.name} ${a.familyName}`.localeCompare(`${b.name} ${b.familyName}`))
+  );
+
+  protected readonly modalTitle = computed(() => {
+    switch (this.mode()) {
+      case 'create': return 'Neuer Kunde';
+      case 'edit': return 'Kunde bearbeiten';
+      default: return 'Kundenprofil';
+    }
   });
 
   ngOnInit(): void {
-    this.loadCustomers();
-  }
-
-  loadCustomers(): void {
     this.customerService.getAllCustomers().subscribe({
-      next: (data) => this.customers.set(data),
-      error: (err) => console.error('Fehler beim Laden der Kunden:', err)
-    });
-  }
-
-  onSubmit(): void {
-    if (this.customerForm.invalid) return;
-
-    const formVal = this.customerForm.value;
-    const fullPhoneNumber = `${formVal.prefix}${formVal.phoneNumber}`;
-
-    const request = {
-      name: formVal.name!,
-      familyName: formVal.familyName!,
-      description: formVal.description!,
-      phoneNumber: fullPhoneNumber,
-      email: formVal.email || undefined
-    };
-
-    this.customerService.createCustomer(request).subscribe({
-      next: (newCustomer) => {
-        this.customers.update(current => [...current, newCustomer]);
-        this.customerForm.reset({ prefix: '+352' });
+      next: data => {
+        this.customers.set(data);
+        this.loading.set(false);
       },
-      error: (err) => console.error('Fehler beim Erstellen:', err)
-    });
-  }
-
-  showDetails(customer: CustomerResponse): void {
-    this.selectedCustomer.set(customer);
-    this.isEditing.set(false);
-  }
-
-  closeDetails(): void {
-    this.selectedCustomer.set(null);
-    this.isEditing.set(false);
-  }
-
-  startUpdate(): void {
-    const cust = this.selectedCustomer();
-    if (!cust) return;
-
-    // Vorwahl und Nummer trennen (vereinfacht für gängige Prefixes)
-    let prefix = '+352';
-    let rawNumber = cust.phoneNumber;
-    for (const c of this.countryCodes) {
-      if (cust.phoneNumber.startsWith(c.code)) {
-        prefix = c.code;
-        rawNumber = cust.phoneNumber.replace(c.code, '');
-        break;
+      error: err => {
+        this.error.set(errorMessage(err, 'Kunden konnten nicht geladen werden.'));
+        this.loading.set(false);
       }
+    });
+  }
+
+  protected openCreate(): void {
+    this.selected.set(null);
+    this.form.reset({ name: '', familyName: '', description: '', prefix: '+352', phoneNumber: '', email: '' });
+    this.formError.set(null);
+    this.mode.set('create');
+  }
+
+  protected openDetails(customer: CustomerResponse): void {
+    this.selected.set(customer);
+    this.mode.set('view');
+  }
+
+  protected startEdit(): void {
+    const c = this.selected();
+    if (!c) return;
+    const { prefix, number } = this.splitPhone(c.phoneNumber);
+    this.form.reset({
+      name: c.name,
+      familyName: c.familyName,
+      description: c.description ?? '',
+      prefix,
+      phoneNumber: number,
+      email: c.email ?? ''
+    });
+    this.formError.set(null);
+    this.mode.set('edit');
+  }
+
+  protected closeModal(): void {
+    this.mode.set(null);
+  }
+
+  protected submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
-
-    this.editForm.setValue({
-      name: cust.name,
-      familyName: cust.familyName,
-      description: cust.description ?? '',
-      prefix: prefix,
-      phoneNumber: rawNumber,
-      email: cust.email ?? ''
-    });
-
-    this.isEditing.set(true);
-  }
-
-  cancelUpdate(): void {
-    this.isEditing.set(false);
-  }
-
-  saveUpdate(): void {
-    const cust = this.selectedCustomer();
-    if (!cust || this.editForm.invalid) return;
-
-    const formVal = this.editForm.value;
-    const fullPhoneNumber = `${formVal.prefix}${formVal.phoneNumber}`;
-
-    const request = {
-      name: formVal.name!,
-      familyName: formVal.familyName!,
-      description: formVal.description!,
-      phoneNumber: fullPhoneNumber,
-      email: formVal.email || undefined
+    const v = this.form.getRawValue();
+    const request: CustomerRequest = {
+      name: v.name.trim(),
+      familyName: v.familyName.trim(),
+      description: v.description.trim() || null,
+      phoneNumber: v.prefix + v.phoneNumber.replace(/\s/g, ''),
+      email: v.email.trim() || null
     };
+    const editing = this.mode() === 'edit' ? this.selected() : null;
+    const save$ = editing
+      ? this.customerService.updateCustomer(editing.customerId, request)
+      : this.customerService.createCustomer(request);
 
-    this.customerService.updateCustomer(cust.customerId, request).subscribe({
-      next: (updatedCustomer) => {
-        this.customers.update(list => 
-          list.map(c => c.customerId === updatedCustomer.customerId ? updatedCustomer : c)
-        );
-        this.selectedCustomer.set(updatedCustomer);
-        this.isEditing.set(false);
+    this.saving.set(true);
+    this.formError.set(null);
+    save$.subscribe({
+      next: saved => {
+        this.customers.update(list => [...list.filter(c => c.customerId !== saved.customerId), saved]);
+        this.toast.success(editing ? 'Änderungen gespeichert.' : `${saved.name} ${saved.familyName} wurde angelegt.`);
+        this.saving.set(false);
+        if (editing) {
+          this.selected.set(saved);
+          this.mode.set('view');
+        } else {
+          this.closeModal();
+        }
       },
-      error: (err) => console.error('Fehler beim Aktualisieren:', err)
+      error: err => {
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          this.formError.set('Diese Telefonnummer oder E-Mail gehört bereits zu einem anderen Kunden.');
+        } else if (!applyFieldErrors(this.form, err)) {
+          this.formError.set(errorMessage(err, 'Kunde konnte nicht gespeichert werden.'));
+        }
+        this.saving.set(false);
+      }
     });
+  }
+
+  protected showError(name: string): boolean {
+    const c = this.form.get(name);
+    return !!c && c.invalid && c.touched;
+  }
+
+  private splitPhone(phone: string): { prefix: string; number: string } {
+    const match = COUNTRY_CODES.find(c => phone.startsWith(c.code));
+    return match ? { prefix: match.code, number: phone.slice(match.code.length) } : { prefix: '+352', number: phone.replace(/^\+/, '') };
   }
 }

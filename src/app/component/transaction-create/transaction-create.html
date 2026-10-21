@@ -1,104 +1,229 @@
-<!-- src/app/component/transaction-create/transaction-create.html -->
-<div class="transaction-form-container">
-  <div class="form-header">
-    <h2>Neuen Verkauf erfassen</h2>
-    <p class="subtitle">Positionen hinzufügen, Sonderpreise vergeben oder als Geschenk verbuchen</p>
-  </div>
-
-  @if (errorMessage()) {
-    <div class="alert-error">
-      ⚠️ {{ errorMessage() }}
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Neuer Verkauf</h1>
+      <p class="page-subtitle">Produkte antippen, Mengen anpassen, Sonderpreis oder Geschenk vergeben.</p>
     </div>
+  </header>
+
+  @if (loadError()) {
+    <div class="alert alert-error">{{ loadError() }}</div>
   }
 
-  <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
-    <div class="parties-grid">
-      <div class="form-group">
-        <label for="sellerSelect">Verkäufer *</label>
-        <select id="sellerSelect" formControlName="sellerId">
-          <option value="" disabled>-- Verkäufer wählen --</option>
-          @for (seller of sellers(); track seller.sellerId) {
-            <option [value]="seller.sellerId">{{ seller.name }}</option>
+  <div class="pos">
+    <!-- Product picker -->
+    <section class="card">
+      <div class="toolbar">
+        <div class="search">
+          <lucide-icon [img]="icons.search" [size]="16" />
+          <input
+            class="input"
+            type="search"
+            placeholder="Produkt suchen …"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+          />
+        </div>
+        <span class="muted small">{{ filteredProducts().length }} Produkte</span>
+      </div>
+
+      <div class="tiles">
+        @if (loading()) {
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+            <div class="skeleton" style="height: 196px; border-radius: 14px"></div>
           }
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="customerSelect">Käufer *</label>
-        <select id="customerSelect" formControlName="customerId">
-          <option value="" disabled>-- Käufer wählen --</option>
-          @for (customer of customers(); track customer.customerId) {
-            <option [value]="customer.customerId">{{ customer.name }}</option>
+        }
+        @for (p of filteredProducts(); track p.productId) {
+          <button
+            type="button"
+            class="tile"
+            [class.in-cart]="quantityInCart(p.productId) > 0"
+            [disabled]="p.unitsToSell === 0"
+            [attr.aria-label]="p.description + ' in den Warenkorb'"
+            (click)="addProduct(p)"
+          >
+            <div class="tile-media">
+              @if (fileUrl(p.imageUrl); as img) {
+                <img [src]="img" [alt]="p.description" loading="lazy" />
+              } @else {
+                <span class="tile-placeholder"><lucide-icon [img]="icons.droplet" [size]="28" /></span>
+              }
+              @if (quantityInCart(p.productId) > 0) {
+                <span class="tile-count">{{ quantityInCart(p.productId) }}</span>
+              }
+            </div>
+            <div class="tile-body">
+              <span class="tile-name">{{ p.description }}</span>
+              <span class="tile-meta">
+                <span class="tile-price">{{ p.pricePerUnit | currency }}</span>
+                @if (p.unitsToSell === 0) {
+                  <span class="badge badge-red">Ausverkauft</span>
+                } @else if (p.unitsToSell <= lowStockThreshold) {
+                  <span class="badge badge-red">{{ p.unitsToSell }} übrig</span>
+                } @else {
+                  <span class="badge">{{ p.unitsToSell }} auf Lager</span>
+                }
+              </span>
+            </div>
+          </button>
+        } @empty {
+          @if (!loading()) {
+            <div class="empty span-all">
+              <span class="empty-title">{{ products().length ? 'Kein Produkt gefunden' : 'Noch keine Produkte' }}</span>
+              @if (!products().length) {
+                <a routerLink="/products" class="btn btn-secondary btn-sm">Produkt anlegen</a>
+              }
+            </div>
           }
-        </select>
+        }
       </div>
-    </div>
+    </section>
 
-    <div class="items-section" formArrayName="items">
-      <div class="items-header">
-        <h3>Verkaufspositionen</h3>
-        <button type="button" class="btn-add-item" (click)="addItem()">
-          + Position hinzufügen
-        </button>
+    <!-- Cart -->
+    <aside class="card cart">
+      <div class="card-header">
+        <h2 class="card-title">Warenkorb</h2>
+        @if (itemCount() > 0) {
+          <span class="badge badge-honey">{{ itemCount() }} {{ itemCount() === 1 ? 'Glas' : 'Gläser' }}</span>
+        }
       </div>
 
-      @for (item of items.controls; track $index; let i = $index) {
-        <div class="item-row" [formGroupName]="i" [class.is-gift-row]="item.get('isGift')?.value">
-          <div class="form-group flex-product">
-            <label>Produkt *</label>
-            <select formControlName="productId">
-              <option value="" disabled>-- Produkt wählen --</option>
-              @for (product of products(); track product.productId) {
-                <option [value]="product.productId">
-                  {{ product.description }} (€{{ product.pricePerUnit | number:'1.2-2' }} | Bestand: {{ product.unitsToSell }})
-                </option>
+      <div class="card-body cart-body">
+        <div class="form-grid">
+          <label class="field">
+            <span class="label">Verkäufer <span class="req">*</span></span>
+            <select class="select" [value]="sellerId()" (change)="sellerId.set($any($event.target).value)">
+              <option value="" disabled>Wählen …</option>
+              @for (s of sellers(); track s.sellerId) {
+                <option [value]="s.sellerId" [selected]="s.sellerId === sellerId()">{{ s.name }}</option>
               }
             </select>
-          </div>
+          </label>
+          <label class="field">
+            <span class="label">Kunde <span class="req">*</span></span>
+            <select class="select" [value]="customerId()" (change)="customerId.set($any($event.target).value)">
+              <option value="" disabled selected>Wählen …</option>
+              @for (c of customers(); track c.customerId) {
+                <option [value]="c.customerId">{{ c.name }} {{ c.familyName }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (!loading() && (!sellers().length || !customers().length)) {
+          <p class="field-hint">
+            @if (!sellers().length) { <a routerLink="/sellers">Verkäufer anlegen</a> }
+            @if (!sellers().length && !customers().length) { · }
+            @if (!customers().length) { <a routerLink="/customers">Kunden anlegen</a> }
+          </p>
+        }
 
-          <div class="form-group flex-qty">
-            <label>Menge *</label>
-            <input type="number" formControlName="quantity" min="1" />
-          </div>
+        <div class="lines">
+          @for (line of lines(); track line.productId) {
+            <div class="line" [class.gift]="line.isGift">
+              <div class="line-head">
+                <span class="strong">{{ line.product.description }}</span>
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="remove(line.productId)" aria-label="Entfernen">
+                  <lucide-icon [img]="icons.trash" [size]="16" />
+                </button>
+              </div>
 
-          <!-- NEU: Eingabefeld für Sonderpreis / Rabatt -->
-          <div class="form-group flex-price">
-            <label>Sonderpreis (€ / Stk.)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              formControlName="customPricePerUnit"
-              [placeholder]="item.get('isGift')?.value ? '0.00 (Geschenk)' : 'Standardpreis'"
-            />
-          </div>
+              <div class="line-controls">
+                <div class="stepper">
+                  <button type="button" (click)="changeQuantity(line.productId, -1)" [disabled]="line.quantity <= 1" aria-label="Weniger">
+                    <lucide-icon [img]="icons.minus" [size]="14" />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    [value]="line.quantity"
+                    (input)="setQuantity(line.productId, $any($event.target).value)"
+                    (blur)="$any($event.target).value = line.quantity"
+                    aria-label="Menge"
+                  />
+                  <button type="button" (click)="changeQuantity(line.productId, 1)" aria-label="Mehr">
+                    <lucide-icon [img]="icons.plus" [size]="14" />
+                  </button>
+                </div>
 
-          <!-- NEU: Checkbox / Button für Geschenk -->
-          <div class="form-group flex-gift">
-            <label class="gift-checkbox-label">
-              <input type="checkbox" formControlName="isGift" />
-              <span>🎁 Als Geschenk (€0,00)</span>
-            </label>
-          </div>
+                @if (!line.isGift) {
+                  <div class="input-affix price-input">
+                    <span class="affix">€</span>
+                    <input
+                      class="input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      [placeholder]="line.product.pricePerUnit | number: '1.2-2'"
+                      (input)="setCustomPrice(line.productId, $any($event.target).value)"
+                      title="Sonderpreis pro Stück – leer lassen für den Standardpreis"
+                      aria-label="Sonderpreis pro Stück"
+                    />
+                  </div>
+                } @else {
+                  <span class="gift-note"><lucide-icon [img]="icons.gift" [size]="15" /> Geschenk</span>
+                }
 
-          @if (items.length > 1) {
-            <button
-              type="button"
-              class="btn-remove-item"
-              (click)="removeItem(i)"
-              title="Position entfernen"
-            >
-              🗑️
-            </button>
+                <label class="switch" title="Als Geschenk verbuchen">
+                  <input
+                    type="checkbox"
+                    [checked]="line.isGift"
+                    (change)="setGift(line.productId, $any($event.target).checked)"
+                    aria-label="Als Geschenk verbuchen"
+                  />
+                  <span class="track"></span>
+                  <lucide-icon [img]="icons.gift" [size]="15" />
+                </label>
+              </div>
+
+              <div class="line-foot">
+                <span class="faint">{{ line.quantity }} × {{ line.unitPrice | currency }}</span>
+                <span class="strong num">{{ line.subtotal | currency }}</span>
+              </div>
+              @if (line.overStock) {
+                <span class="field-error">Nur {{ line.product.unitsToSell }} auf Lager.</span>
+              }
+            </div>
+          } @empty {
+            <div class="cart-empty">
+              <lucide-icon [img]="icons.cart" [size]="28" />
+              <span>Tippe links auf ein Produkt, um es hinzuzufügen.</span>
+            </div>
           }
         </div>
-      }
-    </div>
+      </div>
 
-    <div class="form-actions">
-      <button type="submit" class="btn-submit" [disabled]="transactionForm.invalid">
-        Verkauf abschließen
-      </button>
-    </div>
-  </form>
+      <div class="cart-footer">
+        @if (savings() > 0) {
+          <div class="total-row muted">
+            <span>Rabatt / Geschenke</span>
+            <span class="num">−{{ savings() | currency }}</span>
+          </div>
+        }
+        <div class="total-row total">
+          <span>Gesamt</span>
+          <span class="num">{{ total() | currency }}</span>
+        </div>
+
+        @if (submitError()) {
+          <div class="alert alert-error">{{ submitError() }}</div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-primary btn-lg btn-block"
+          [disabled]="!!missing() || submitting()"
+          (click)="submit()"
+        >
+          @if (submitting()) {
+            <span class="spinner"></span> Wird gespeichert …
+          } @else {
+            Verkauf abschließen
+          }
+        </button>
+        @if (missing() && cart().length > 0) {
+          <p class="field-hint center">{{ missing() }}</p>
+        }
+      </div>
+    </aside>
+  </div>
 </div>

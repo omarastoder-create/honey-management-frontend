@@ -1,311 +1,132 @@
-.dashboard-wrapper {
-  padding: 2rem;
-  background-color: #fefcf7;
-  overflow: hidden;
+.small { font-size: 0.8rem; }
+
+/* Bar chart */
+.chart {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px;
+  height: 240px;
+  padding-top: 28px;
+}
+
+.chart-col {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-h2 {
-  color: #2c2a24;
-  margin-bottom: 1.5rem;
-  border-bottom: 3px solid #f3c623;
-  display: inline-block;
-  padding-bottom: 0.5rem;
-  font-size: 1.5rem;
+.chart-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 8px;
+  background: repeating-linear-gradient(to top, var(--border) 0 1px, transparent 1px 25%);
 }
 
-.loading-text {
-  color: #735a1f;
-  font-style: italic;
-  padding: 1rem 0;
+.chart-bar {
+  position: relative;
+  width: 100%;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--honey) 55%, transparent), var(--honey));
+  opacity: 0.55;
+  transition: height 0.6s var(--ease), opacity 0.15s var(--ease);
+
+  .current & { opacity: 1; }
 }
 
-/* --- KPI GRID STYLES --- */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+.chart-col:hover .chart-bar { opacity: 1; }
+
+.chart-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s var(--ease);
 }
 
-.modern-card {
-  background: #fff;
-  border: 1px solid #e8e0c5;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+.chart-col:hover .chart-tip { opacity: 1; }
 
-  &:hover {
-    transform: translateY(-3px);
-    border-color: #f3c623;
-  }
+.chart-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-3);
+
+  .current & { color: var(--text); }
 }
 
-.kpi-box {
-  padding: 1.5rem;
+/* Leaderboard */
+.leaders { display: flex; flex-direction: column; gap: 12px; }
+
+.leader {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-
-  .kpi-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &.revenue {
-      background-color: rgba(243, 198, 35, 0.15);
-      color: #d4a017;
-    }
-
-    &.expenses {
-      background-color: rgba(229, 115, 115, 0.12);
-      color: #d32f2f;
-    }
-
-    &.profit {
-      background-color: rgba(76, 175, 80, 0.12);
-      color: #388e3c;
-    }
-  }
-
-  .kpi-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-
-    .kpi-label {
-      font-size: 0.85rem;
-      color: #7d796e;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .kpi-value {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #2c2a24;
-
-      &.negative {
-        color: #d32f2f;
-      }
-    }
-  }
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 
-/* --- PERFORMER GRID STYLES --- */
-.performer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+.avatar-md { width: 44px; height: 44px; font-size: 0.9rem; }
+
+.leader-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.leader-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--honey-strong);
 }
 
-.performer-card {
-  padding: 1.25rem 1.5rem;
+.leader-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leader-value { font-weight: 800; }
+
+/* Lists */
+.list-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
 
-  h3 {
-    font-size: 0.9rem;
-    color: #7d796e;
-    margin: 0;
-    font-weight: 600;
-  }
-
-  .performer-name {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #2c2a24;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .performer-value {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #735a1f;
-  }
+  &:last-child { border-bottom: 0; }
 }
 
-.section-divider {
-  border: none;
-  border-top: 1px solid #e8e0c5;
-  margin: 1rem 0;
-}
+.list-row-end { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
 
-/* --- ORBIT CAROUSEL STYLES (Dein Original) --- */
-.orbit-container {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  
-  &::before, &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    width: 100px;
-    height: 100%;
-    z-index: 2;
-    pointer-events: none;
-  }
-  &::before {
-    left: 0;
-    background: linear-gradient(to right, #fefcf7 0%, rgba(254, 252, 247, 0) 100%);
-  }
-  &::after {
-    right: 0;
-    background: linear-gradient(to left, #fefcf7 0%, rgba(254, 252, 247, 0) 100%);
-  }
-}
-
-.orbit-track {
+.stock-row {
   display: flex;
-  width: max-content;
-  animation: orbit 55s linear infinite;
-
-  &:hover {
-    animation-play-state: paused;
-  }
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
 }
 
-.track-half {
-  display: flex;
-  gap: 2rem;
-  padding-right: 2rem;
-}
-
-.product-card {
-  width: 320px;
+.stock-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
   flex-shrink: 0;
-  background: #fff;
-  border: 1px solid #e8e0c5;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-5px);
-    border-color: #f3c623;
-  }
-
-  img {
-    width: 100%;
-    height: 220px;
-    object-fit: cover;
-    display: block;
-  }
-
-  .placeholder-img {
-    width: 100%;
-    height: 220px;
-    background-color: #f3f4f6;
-    color: #9ca3af;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-style: italic;
-  }
-
-  .card-details {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    h3 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: #2c2a24;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .price {
-      font-weight: 600;
-      color: #735a1f;
-      font-size: 1.1rem;
-    }
-  }
 }
 
-@keyframes orbit {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.statistics-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-}
+.stock-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.stock-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.performer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-}
-
-.performer-card {
-  background: #ffffff;
-  border: 1px solid #e8e0c5;
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    transform: translateY(-3px);
-    border-color: #f3c623;
-    box-shadow: 0 6px 16px rgba(243, 198, 35, 0.15);
-  }
-
-  h3 {
-    font-size: 0.85rem;
-    color: #8c8574;
-    margin: 0;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .performer-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #2c2a24;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .performer-value {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #967215;
-  }
-}
-
-.section-divider {
-  border: none;
-  border-top: 2px dashed #e8e0c5;
-  margin: 1.5rem 0;
-}
+.empty.compact { padding: 24px 12px; }

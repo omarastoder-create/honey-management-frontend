@@ -1,81 +1,265 @@
-<!-- src/app/component/expense-list/expense-list.html -->
-<div class="expense-container">
-  <div class="header-section">
+<div class="page">
+  <header class="page-header">
     <div>
-      <h2>Betriebsausgaben & Rechnungen</h2>
-      <p class="subtitle">Erfassung und Verwaltung aller anfallenden Kosten (Zucker, Material etc.)</p>
+      <h1 class="page-title">Ausgaben</h1>
+      <p class="page-subtitle">Zucker, Gläser, Material – mit Rechnung oder Kassenbon als Beleg.</p>
     </div>
-    <div class="stats-group">
-      <span class="badge">{{ expenses().length }} Ausgaben</span>
-      <span class="badge badge-highlight">Gesamtkosten: €{{ totalExpenses() | number:'1.2-2' }}</span>
-    </div>
-  </div>
-
-  @if (errorMessage()) {
-    <div class="alert-error">
-      ⚠️ {{ errorMessage() }}
-    </div>
-  }
-
-  <form [formGroup]="expenseForm" (ngSubmit)="onSubmit()" class="expense-form-card">
-    <h3>Neue Ausgabe hinzufügen</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Titel / Beschreibung *</label>
-        <input type="text" formControlName="title" placeholder="z.B. Zuckersirup 25kg" />
-      </div>
-      <div class="form-group">
-        <label>Lieferant / Quelle</label>
-        <input type="text" formControlName="supplierName" placeholder="z.B. Imkereibedarf Müller" />
-      </div>
-      <div class="form-group">
-        <label>Datum *</label>
-        <input type="date" formControlName="expenseDate" />
-      </div>
-      <div class="form-group">
-        <label>Betrag (€) *</label>
-        <input type="number" step="0.01" min="0.01" formControlName="amount" placeholder="0.00" />
-      </div>
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn-submit" [disabled]="expenseForm.invalid">
-        + Ausgabe speichern
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <lucide-icon [img]="icons.plus" [size]="18" /> Neue Ausgabe
       </button>
     </div>
+  </header>
+
+  <section class="grid grid-stats">
+    <div class="card stat">
+      <span class="stat-icon tone-red"><lucide-icon [img]="icons.wallet" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Ausgaben gesamt</div>
+        <div class="stat-value">{{ total() | currency }}</div>
+        <div class="stat-hint">{{ expenses().length }} Buchungen</div>
+      </div>
+    </div>
+    <div class="card stat">
+      <span class="stat-icon tone-honey"><lucide-icon [img]="icons.calendar" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Dieser Monat</div>
+        <div class="stat-value">{{ thisMonth() | currency }}</div>
+      </div>
+    </div>
+    <button type="button" class="card stat stat-button" (click)="receiptFilter.set('without')" [disabled]="withoutReceipt() === 0">
+      <span class="stat-icon" [class]="withoutReceipt() ? 'stat-icon tone-red' : 'stat-icon tone-green'">
+        <lucide-icon [img]="icons.paperclip" [size]="20" />
+      </span>
+      <div>
+        <div class="stat-label">Ohne Beleg</div>
+        <div class="stat-value">{{ withoutReceipt() }}</div>
+        <div class="stat-hint">{{ withoutReceipt() ? 'Anklicken zum Anzeigen' : 'Alles belegt' }}</div>
+      </div>
+    </button>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="search">
+        <lucide-icon [img]="icons.search" [size]="16" />
+        <input
+          class="input"
+          type="search"
+          placeholder="Titel oder Lieferant …"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </div>
+      <div class="segmented">
+        <button type="button" [class.active]="receiptFilter() === 'all'" (click)="receiptFilter.set('all')">Alle</button>
+        <button type="button" [class.active]="receiptFilter() === 'with'" (click)="receiptFilter.set('with')">Mit Beleg</button>
+        <button type="button" [class.active]="receiptFilter() === 'without'" (click)="receiptFilter.set('without')">Ohne Beleg</button>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="card-body"><div class="alert alert-error">{{ error() }}</div></div>
+    } @else if (loading()) {
+      <div class="card-body">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton" style="height: 48px; margin-bottom: 10px"></div>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Ausgabe</th>
+              <th>Beleg</th>
+              <th class="num">Betrag</th>
+              <th class="actions"><span class="sr-only">Aktionen</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of filtered(); track e.expenseId) {
+              <tr>
+                <td class="muted nowrap">{{ e.expenseDate | date: 'dd.MM.yyyy' }}</td>
+                <td>
+                  <div class="strong">{{ e.title }}</div>
+                  @if (e.supplierName) {
+                    <div class="muted small">{{ e.supplierName }}</div>
+                  }
+                </td>
+                <td>
+                  @if (uploadingId() === e.expenseId) {
+                    <span class="badge"><span class="spinner tiny"></span> Lädt hoch …</span>
+                  } @else if (e.receiptUrl) {
+                    <button type="button" class="receipt-chip" (click)="viewing.set(e)">
+                      <lucide-icon [img]="isPdf(e.receiptUrl) ? icons.file : icons.image" [size]="14" />
+                      {{ isPdf(e.receiptUrl) ? 'PDF' : 'Foto' }} ansehen
+                    </button>
+                  } @else {
+                    <button type="button" class="btn btn-ghost btn-sm add-receipt" (click)="chooseReceiptFor(e)">
+                      <lucide-icon [img]="icons.paperclip" [size]="14" /> Beleg hinzufügen
+                    </button>
+                  }
+                </td>
+                <td class="num strong">{{ e.amount | currency }}</td>
+                <td class="actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    [class]="confirmDeleteId() === e.expenseId ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-ghost btn-icon'"
+                    (click)="deleteExpense(e)"
+                    [title]="confirmDeleteId() === e.expenseId ? 'Nochmal klicken zum Löschen' : 'Löschen'"
+                  >
+                    <lucide-icon [img]="icons.trash" [size]="16" />
+                    @if (confirmDeleteId() === e.expenseId) { Wirklich löschen? }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5">
+                  <div class="empty">
+                    <span class="empty-icon"><lucide-icon [img]="icons.wallet" [size]="26" /></span>
+                    @if (expenses().length) {
+                      <span class="empty-title">Keine Treffer</span>
+                      <span class="empty-text">Keine Ausgabe passt zu Suche und Filter.</span>
+                    } @else {
+                      <span class="empty-title">Noch keine Ausgaben</span>
+                      <span class="empty-text">Erfasse Kosten wie Zucker oder Gläser – am besten gleich mit Foto der Rechnung.</span>
+                      <button type="button" class="btn btn-primary btn-sm" (click)="openModal()">Neue Ausgabe</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
+<!-- Hidden picker used by "Beleg hinzufügen" / "Ersetzen" -->
+<input #rowFileInput type="file" class="sr-only" accept="application/pdf,image/*" (change)="onRowFileChosen($event)" />
+
+<!-- New expense -->
+<app-modal [open]="modalOpen()" title="Neue Ausgabe" subtitle="Beleg optional – du kannst ihn auch später anhängen." (closed)="closeModal()">
+  <form id="expenseForm" class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field span-2">
+      <span class="label">Titel <span class="req">*</span></span>
+      <input class="input" formControlName="title" placeholder="z. B. Zuckersirup 25 kg" />
+      @if (showError('title')) {
+        <span class="field-error">{{ form.controls.title.errors?.['server'] ?? 'Bitte einen Titel eingeben.' }}</span>
+      }
+    </label>
+
+    <label class="field span-2">
+      <span class="label">Lieferant</span>
+      <input class="input" formControlName="supplierName" placeholder="z. B. Imkereibedarf Müller" />
+    </label>
+
+    <label class="field">
+      <span class="label">Datum <span class="req">*</span></span>
+      <input class="input" type="date" formControlName="expenseDate" />
+    </label>
+
+    <label class="field">
+      <span class="label">Betrag <span class="req">*</span></span>
+      <div class="input-affix">
+        <span class="affix">€</span>
+        <input class="input" type="number" step="0.01" min="0.01" formControlName="amount" placeholder="0,00" />
+      </div>
+      @if (showError('amount')) {
+        <span class="field-error">{{ form.controls.amount.errors?.['server'] ?? 'Betrag muss größer als 0 sein.' }}</span>
+      }
+    </label>
+
+    <div class="field span-2">
+      <span class="label">Beleg</span>
+      @if (receiptFile(); as file) {
+        <div class="file-chip">
+          @if (receiptPreview(); as preview) {
+            <img [src]="preview" alt="Beleg-Vorschau" />
+          } @else {
+            <span class="file-icon"><lucide-icon [img]="icons.file" [size]="22" /></span>
+          }
+          <span class="file-text">
+            <span class="file-name">{{ file.name }}</span>
+            <span class="file-size">{{ fileSize(file.size) }}</span>
+          </span>
+          <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="clearReceipt()" aria-label="Beleg entfernen">
+            <lucide-icon [img]="icons.trash" [size]="16" />
+          </button>
+        </div>
+      } @else if (preparingFile()) {
+        <div class="skeleton" style="height: 110px"></div>
+      } @else {
+        <app-file-drop
+          accept="application/pdf,image/*"
+          label="Rechnung oder Kassenbon hierher ziehen"
+          hint="PDF oder Foto (JPG, PNG) · max. 8 MB"
+          (fileSelected)="onReceiptSelected($event)"
+        />
+      }
+    </div>
+
+    @if (formError()) {
+      <div class="alert alert-error span-2">{{ formError() }}</div>
+    }
   </form>
 
-  @if (expenses().length > 0) {
-    <div class="table-responsive">
-      <table class="expense-table">
-        <thead>
-          <tr>
-            <th>Datum</th>
-            <th>Titel</th>
-            <th>Lieferant</th>
-            <th>Betrag</th>
-            <th class="text-right">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (exp of expenses(); track exp.expenseId) {
-            <tr>
-              <td class="date">{{ exp.expenseDate | date:'dd.MM.yyyy' }}</td>
-              <td class="fw-bold">{{ exp.title }}</td>
-              <td>{{ exp.supplierName || '—' }}</td>
-              <td class="price">€{{ exp.amount | number:'1.2-2' }}</td>
-              <td class="text-right">
-                <button type="button" class="btn-danger" (click)="deleteExpense(exp.expenseId)" title="Löschen">
-                  🗑️
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  } @else {
-    <div class="empty-state">
-      Noch keine Ausgaben in der Historie vorhanden.
+  <div modal-footer class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Abbrechen</button>
+    <button type="submit" form="expenseForm" class="btn btn-primary" [disabled]="saving() || preparingFile()">
+      @if (saving()) {
+        <span class="spinner"></span>
+      }
+      Ausgabe speichern
+    </button>
+  </div>
+</app-modal>
+
+<!-- Receipt viewer -->
+<app-modal
+  [open]="!!viewing()"
+  [title]="viewing()?.title ?? 'Beleg'"
+  [subtitle]="(viewing()?.expenseDate | date: 'dd.MM.yyyy') + ' · ' + (viewing()?.amount | currency)"
+  [wide]="true"
+  (closed)="viewing.set(null)"
+>
+  @if (viewing(); as e) {
+    <div class="viewer">
+      @if (isPdf(e.receiptUrl)) {
+        @if (viewerUrl(); as url) {
+          <!-- <object> shows the fallback if the browser cannot display PDFs inline -->
+          <object [data]="url" type="application/pdf" title="Beleg (PDF)">
+            <div class="viewer-fallback">
+              <lucide-icon [img]="icons.file" [size]="36" />
+              <span>Die PDF-Vorschau ist in diesem Browser nicht verfügbar.</span>
+              <a class="btn btn-secondary btn-sm" [href]="fileUrl(e.receiptUrl)" target="_blank" rel="noopener">PDF öffnen</a>
+            </div>
+          </object>
+        }
+      } @else {
+        <img [src]="fileUrl(e.receiptUrl)" alt="Beleg" />
+      }
     </div>
   }
-</div>
+  <div modal-footer class="modal-footer viewer-footer">
+    @if (viewing(); as e) {
+      <button type="button" class="btn btn-danger-soft" (click)="removeReceipt(e)">
+        <lucide-icon [img]="icons.trash" [size]="16" /> Entfernen
+      </button>
+      <span class="spacer"></span>
+      <!-- Own picker: everything outside an open dialog is inert -->
+      <input #viewerFileInput type="file" class="sr-only" accept="application/pdf,image/*" (change)="onRowFileChosen($event)" />
+      <button type="button" class="btn btn-secondary" (click)="chooseReceiptFor(e, viewerFileInput)">
+        <lucide-icon [img]="icons.replace" [size]="16" /> Ersetzen
+      </button>
+      <a class="btn btn-primary" [href]="fileUrl(e.receiptUrl)" target="_blank" rel="noopener">
+        <lucide-icon [img]="icons.external" [size]="16" /> In neuem Tab öffnen
+      </a>
+    }
+  </div>
+</app-modal>

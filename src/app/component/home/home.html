@@ -1,119 +1,212 @@
-<!-- src/app/component/home/home.html -->
-<div class="dashboard-wrapper">
-  
-  <!-- Sektion 1: Neue Statistiken & KPIs -->
-  <section class="statistics-section">
-    <h2>Imkerei Übersicht</h2>
-
-    @if (isLoadingStats()) {
-      <p class="loading-text">Lade Statistiken...</p>
-    } @else if (stats(); as data) {
-      <!-- KPI Grid -->
-      <div class="kpi-grid">
-        <div class="kpi-box modern-card">
-          <div class="kpi-icon revenue">
-            <lucide-icon [img]="icons.revenue" [size]="24"></lucide-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Gesamteinnahmen</span>
-            <span class="kpi-value">{{ data.totalRevenue | currency:'EUR':'symbol':'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div class="kpi-box modern-card">
-          <div class="kpi-icon expenses">
-            <lucide-icon [img]="icons.expenses" [size]="24"></lucide-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Gesamtausgaben</span>
-            <span class="kpi-value">{{ data.totalExpenses | currency:'EUR':'symbol':'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div class="kpi-box modern-card">
-          <div class="kpi-icon profit">
-            <lucide-icon [img]="icons.profit" [size]="24"></lucide-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Nettogewinn</span>
-            <span class="kpi-value" [class.negative]="data.netProfit < 0">
-              {{ data.netProfit | currency:'EUR':'symbol':'1.2-2' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top Performer Section -->
-      <div class="performer-grid">
-        <div class="modern-card performer-card">
-          <h3>Bester Kunde (Monat)</h3>
-          <p class="performer-name">{{ data.topCustomerMonth?.name ?? 'Keine Daten' }}</p>
-          <span class="performer-value">{{ (data.topCustomerMonth?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
-        </div>
-
-        <div class="modern-card performer-card">
-          <h3>Bester Kunde (Jahr)</h3>
-          <p class="performer-name">{{ data.topCustomerYear?.name ?? 'Keine Daten' }}</p>
-          <span class="performer-value">{{ (data.topCustomerYear?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
-        </div>
-
-        <div class="modern-card performer-card">
-          <h3>Bester Verkäufer (Monat)</h3>
-          <p class="performer-name">{{ data.topSellerMonth?.name ?? 'Keine Daten' }}</p>
-          <span class="performer-value">{{ (data.topSellerMonth?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
-        </div>
-
-        <div class="modern-card performer-card">
-          <h3>Bester Verkäufer (Jahr)</h3>
-          <p class="performer-name">{{ data.topSellerYear?.name ?? 'Keine Daten' }}</p>
-          <span class="performer-value">{{ (data.topSellerYear?.totalVolume ?? 0) | currency:'EUR':'symbol':'1.2-2' }}</span>
-        </div>
-      </div>
-    }
-  </section>
-
-  <hr class="section-divider">
-
-  <!-- Sektion 2: Deine bestehenden Featured Products -->
-  <h2>Featured Products</h2>
-  
-  <div class="orbit-container">
-    <div class="orbit-track">
-      
-      <!-- Hälfte 1: Originale Liste -->
-      <div class="track-half">
-        @for (product of products(); track product.productId) {
-          <div class="product-card">
-            @if (product.imageUrl) {
-              <img [src]="'http://localhost:8080' + product.imageUrl" alt="Product image">
-            } @else {
-              <div class="placeholder-img">No Image</div>
-            }
-            <div class="card-details">
-              <h3>{{ product.description }}</h3>
-              <span class="price">€{{ product.pricePerUnit | number:'1.2-2' }}</span>
-            </div>
-          </div>
-        }
-      </div>
-
-      <!-- Hälfte 2: Exaktes Duplikat für den nahtlosen Loop -->
-      <div class="track-half">
-        @for (product of products(); track product.productId + '-dup') {
-          <div class="product-card">
-            @if (product.imageUrl) {
-              <img [src]="'http://localhost:8080' + product.imageUrl" alt="Product image">
-            } @else {
-              <div class="placeholder-img">No Image</div>
-            }
-            <div class="card-details">
-              <h3>{{ product.description }}</h3>
-              <span class="price">€{{ product.pricePerUnit | number:'1.2-2' }}</span>
-            </div>
-          </div>
-        }
-      </div>
-
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ greeting }}, Omar</h1>
+      <p class="page-subtitle">{{ now | date: 'EEEE, d. MMMM y' }} · Hier ist der Überblick über deine Imkerei.</p>
     </div>
-  </div>
+    <div class="page-actions">
+      <a routerLink="/expenses" [queryParams]="{ neu: 1 }" class="btn btn-secondary">
+        <lucide-icon [img]="icons.receipt" [size]="18" /> Ausgabe erfassen
+      </a>
+      <a routerLink="/transactions/new" class="btn btn-primary">
+        <lucide-icon [img]="icons.plus" [size]="18" /> Neuer Verkauf
+      </a>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="card empty">
+      <span class="empty-icon tone-red"><lucide-icon [img]="icons.alert" [size]="26" /></span>
+      <span class="empty-title">Dashboard nicht verfügbar</span>
+      <span class="empty-text">{{ error() }}</span>
+      <button type="button" class="btn btn-secondary" (click)="load()">Erneut versuchen</button>
+    </div>
+  } @else {
+    <!-- KPIs -->
+    <section class="grid grid-stats">
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="card stat"><div class="skeleton" style="height: 64px; width: 100%"></div></div>
+        }
+      } @else if (stats(); as s) {
+        <div class="card stat">
+          <span class="stat-icon tone-honey"><lucide-icon [img]="icons.revenue" [size]="20" /></span>
+          <div>
+            <div class="stat-label">Umsatz gesamt</div>
+            <div class="stat-value">{{ s.totalRevenue | currency }}</div>
+            <div class="stat-hint">{{ yearRevenue() | currency }} in {{ now.getFullYear() }}</div>
+          </div>
+        </div>
+        <div class="card stat">
+          <span class="stat-icon tone-red"><lucide-icon [img]="icons.expenses" [size]="20" /></span>
+          <div>
+            <div class="stat-label">Ausgaben gesamt</div>
+            <div class="stat-value">{{ s.totalExpenses | currency }}</div>
+            <div class="stat-hint">Zucker, Gläser, Material …</div>
+          </div>
+        </div>
+        <div class="card stat">
+          <span class="stat-icon" [class]="s.netProfit < 0 ? 'stat-icon tone-red' : 'stat-icon tone-green'">
+            <lucide-icon [img]="icons.profit" [size]="20" />
+          </span>
+          <div>
+            <div class="stat-label">Nettogewinn</div>
+            <div class="stat-value" [class.negative]="s.netProfit < 0" [class.positive]="s.netProfit > 0">
+              {{ s.netProfit | currency }}
+            </div>
+            <div class="stat-hint">Umsatz minus Ausgaben</div>
+          </div>
+        </div>
+        <div class="card stat">
+          <span class="stat-icon tone-blue"><lucide-icon [img]="icons.stock" [size]="20" /></span>
+          <div>
+            <div class="stat-label">Gläser auf Lager</div>
+            <div class="stat-value">{{ unitsInStock() }}</div>
+            <div class="stat-hint">
+              {{ products().length }} Produkte
+              @if (lowStockCount() > 0) {
+                · <span class="negative strong">{{ lowStockCount() }} fast leer</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Chart + leaderboard -->
+    <section class="grid grid-2-1">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Umsatz {{ now.getFullYear() }}</h2>
+            <p class="card-subtitle">Verkäufe pro Monat</p>
+          </div>
+          <span class="badge badge-honey">{{ yearRevenue() | currency }}</span>
+        </div>
+        <div class="card-body">
+          <div class="chart" role="img" aria-label="Monatsumsatz als Balkendiagramm">
+            @for (m of monthBars(); track m.label) {
+              <div class="chart-col" [class.current]="m.current">
+                <div class="chart-track">
+                  <div class="chart-bar" [style.height.%]="loading() ? 0 : m.percent">
+                    <span class="chart-tip">{{ m.revenue | currency }}</span>
+                  </div>
+                </div>
+                <span class="chart-label">{{ m.label }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Bestenliste</h2>
+          <div class="segmented">
+            <button type="button" [class.active]="leaderPeriod() === 'month'" (click)="leaderPeriod.set('month')">Monat</button>
+            <button type="button" [class.active]="leaderPeriod() === 'year'" (click)="leaderPeriod.set('year')">Jahr</button>
+          </div>
+        </div>
+        <div class="card-body leaders">
+          @for (leader of leaders(); track leader.role) {
+            <div class="leader">
+              @if (hasData(leader.stat)) {
+                <span class="avatar avatar-md" [class]="'avatar avatar-md ' + avatarTone(leader.stat.name)">
+                  {{ initials(leader.stat.name) }}
+                </span>
+                <div class="leader-text">
+                  <span class="leader-role"><lucide-icon [img]="icons.crown" [size]="13" /> {{ leader.role }}</span>
+                  <span class="leader-name">{{ leader.stat.name }}</span>
+                </div>
+                <span class="leader-value num">{{ leader.stat.totalVolume | currency }}</span>
+              } @else {
+                <span class="avatar avatar-md tone-honey">–</span>
+                <div class="leader-text">
+                  <span class="leader-role">{{ leader.role }}</span>
+                  <span class="faint">Noch keine Verkäufe in diesem Zeitraum</span>
+                </div>
+              }
+            </div>
+          }
+          @if (loading()) {
+            <div class="skeleton" style="height: 120px"></div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent sales + stock -->
+    <section class="grid grid-1-1">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Letzte Verkäufe</h2>
+          <a routerLink="/transactions" class="card-link">Alle anzeigen <lucide-icon [img]="icons.arrow" [size]="14" /></a>
+        </div>
+        <div class="card-body">
+          @for (tx of recentSales(); track tx.transactionId) {
+            <div class="list-row">
+              <div class="person">
+                <span [class]="'avatar ' + avatarTone(tx.customerName)">{{ initials(tx.customerName) }}</span>
+                <span class="person-text">
+                  <span class="person-name">{{ tx.customerName }}</span>
+                  <span class="person-meta">{{ itemSummary(tx) }}</span>
+                </span>
+              </div>
+              <div class="list-row-end">
+                <span class="strong num">{{ tx.totalPrice | currency }}</span>
+                <span class="faint small">{{ tx.saleDate | date: 'd. MMM, HH:mm' }}</span>
+              </div>
+            </div>
+          } @empty {
+            @if (!loading()) {
+              <div class="empty compact">
+                <span class="empty-title">Noch keine Verkäufe</span>
+                <a routerLink="/transactions/new" class="btn btn-secondary btn-sm">Ersten Verkauf erfassen</a>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Lagerbestand</h2>
+          <a routerLink="/products" class="card-link">Produkte <lucide-icon [img]="icons.arrow" [size]="14" /></a>
+        </div>
+        <div class="card-body">
+          @for (p of stockList(); track p.productId) {
+            <div class="stock-row">
+              @if (fileUrl(p.imageUrl); as img) {
+                <img class="stock-thumb" [src]="img" [alt]="p.description" loading="lazy" />
+              } @else {
+                <span class="stock-thumb tone-honey"></span>
+              }
+              <div class="stock-main">
+                <div class="stock-top">
+                  <span class="strong">{{ p.description }}</span>
+                  @if (p.unitsToSell === 0) {
+                    <span class="badge badge-red">Ausverkauft</span>
+                  } @else if (p.unitsToSell <= lowStockThreshold) {
+                    <span class="badge badge-red">{{ p.unitsToSell }} übrig</span>
+                  } @else {
+                    <span class="muted small num">{{ p.unitsToSell }} Stk.</span>
+                  }
+                </div>
+                <div class="progress" [class.low]="p.unitsToSell <= lowStockThreshold">
+                  <span [style.width.%]="(p.unitsToSell / maxStock()) * 100"></span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            @if (!loading()) {
+              <div class="empty compact">
+                <span class="empty-title">Noch keine Produkte</span>
+                <a routerLink="/products" class="btn btn-secondary btn-sm">Produkt anlegen</a>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </section>
+  }
 </div>

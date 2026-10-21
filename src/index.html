@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>HoneyManagementFrontend</title>
+  <title>HoneyApp · Imkerei</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5f0">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    // Apply the saved theme before the first paint to avoid a light/dark flash.
+    try {
+      var t = localStorage.getItem('honey-theme');
+      if (t === 'dark' || t === 'light') document.documentElement.dataset['theme'] = t;
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>
