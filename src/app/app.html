@@ -1,16 +1,83 @@
-<!-- src/app/app.html -->
-<header class="navbar">
-  <div class="logo">🐝 Honey Management</div>
-  <nav>
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Startseite</a>
-    <a routerLink="/sellers" routerLinkActive="active">Verkäufer</a>
-    <a routerLink="/customers" routerLinkActive="active">Käufer</a>
-    <a routerLink="/products" routerLinkActive="active">Produkte</a>
-    <a routerLink="/transactions" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Historie</a>
-    <a routerLink="/transactions/new" routerLinkActive="active">Neuer Verkauf</a>
-  </nav>
-</header>
+<div class="shell">
+  <!-- Mobile top bar -->
+  <header class="mobile-bar no-print">
+    <button type="button" class="btn btn-ghost btn-icon" (click)="mobileNavOpen.set(true)" aria-label="Menü öffnen">
+      <lucide-icon [img]="icons.menu" [size]="20" />
+    </button>
+    <a routerLink="/" class="brand">
+      <span class="brand-logo"><lucide-icon [img]="icons.logo" [size]="18" /></span>
+      <span class="brand-name">HoneyApp</span>
+    </a>
+    <a routerLink="/transactions/new" class="btn btn-primary btn-icon btn-sm" aria-label="Neuer Verkauf">
+      <lucide-icon [img]="icons.plus" [size]="18" />
+    </a>
+  </header>
 
-<main class="main-content">
-  <router-outlet></router-outlet>
-</main>
+  @if (mobileNavOpen()) {
+    <div class="scrim no-print" (click)="mobileNavOpen.set(false)"></div>
+  }
+
+  <aside class="sidebar no-print" [class.open]="mobileNavOpen()">
+    <div class="sidebar-top">
+      <a routerLink="/" class="brand">
+        <span class="brand-logo"><lucide-icon [img]="icons.logo" [size]="20" /></span>
+        <span class="brand-text">
+          <span class="brand-name">HoneyApp</span>
+          <span class="brand-tag">Imkerei-Verwaltung</span>
+        </span>
+      </a>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm close-nav" (click)="mobileNavOpen.set(false)" aria-label="Menü schließen">
+        <lucide-icon [img]="icons.close" [size]="18" />
+      </button>
+    </div>
+
+    <a routerLink="/transactions/new" routerLinkActive="active" class="btn btn-primary btn-block new-sale">
+      <lucide-icon [img]="icons.plus" [size]="18" />
+      Neuer Verkauf
+    </a>
+
+    <nav class="nav">
+      @for (group of navGroups; track group.title) {
+        <div class="nav-group">
+          <span class="nav-title">{{ group.title }}</span>
+          @for (item of group.items; track item.path) {
+            <a
+              class="nav-item"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            >
+              <lucide-icon [img]="item.icon" [size]="18" />
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user">
+        <span class="avatar tone-green">OR</span>
+        <span class="user-text">
+          <span class="user-name">Omar</span>
+          <span class="user-role">Imker · Admin</span>
+        </span>
+      </div>
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon btn-sm"
+        (click)="theme.toggle()"
+        [attr.aria-label]="theme.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design'"
+        [title]="theme.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design'"
+      >
+        <lucide-icon [img]="theme.theme() === 'dark' ? icons.sun : icons.moon" [size]="18" />
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <router-outlet />
+  </main>
+</div>
+
+<app-toast-container class="no-print" />

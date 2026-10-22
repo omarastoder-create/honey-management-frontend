@@ -1,48 +1,194 @@
-<!-- src/app/component/customer-list/customer-list.html -->
-<div class="customer-container">
-  <div class="header-section">
-    <h2>Käufer-Übersicht</h2>
-    <span class="badge">Gesamt: {{ customers().length }}</span>
-  </div>
-
-  <form [formGroup]="customerForm" (ngSubmit)="onSubmit()" class="add-customer-form">
-    <div class="form-grid">
-      <input type="text" formControlName="name" placeholder="Vorname..." class="form-input">
-      <input type="text" formControlName="familyName" placeholder="Nachname..." class="form-input">
-      <input type="text" formControlName="description" placeholder="Beschreibung (z.B. B2B Großkunde)..." class="form-input">
-      <input type="text" formControlName="phoneNumber" placeholder="Telefon (z.B. +352...)" class="form-input">
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Kunden</h1>
+      <p class="page-subtitle">{{ customers().length }} Kunden · Kontaktdaten und Notizen.</p>
     </div>
-    <button type="submit" [disabled]="customerForm.invalid" class="btn-primary">Käufer Hinzufügen</button>
-  </form>
-  
-  <table class="honey-table">
-    <thead>
-      <tr>
-        <th>Vorname</th>
-        <th>Nachname</th>
-        <th>Beschreibung</th>
-        <th>Telefon</th>
-        <th>Kunden-ID (UUID)</th>
-        <th>Aktionen</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (customer of customers(); track customer.customerId) {
-        <tr>
-          <td class="fw-bold">{{ customer.name }}</td>
-          <td class="fw-bold">{{ customer.familyName }}</td>
-          <td>{{ customer.description }}</td>
-          <td>{{ customer.phoneNumber }}</td>
-          <td class="text-muted">{{ customer.customerId }}</td>
-          <td>
-            <button class="btn-action">Details</button>
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="6" class="empty-state">Keine Käufer in der Datenbank gefunden.</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" (click)="openCreate()">
+        <lucide-icon [img]="icons.add" [size]="18" /> Neuer Kunde
+      </button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="search">
+        <lucide-icon [img]="icons.search" [size]="16" />
+        <input
+          class="input"
+          type="search"
+          placeholder="Name, Telefon, E-Mail …"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="card-body"><div class="alert alert-error">{{ error() }}</div></div>
+    } @else if (loading()) {
+      <div class="card-body">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton" style="height: 48px; margin-bottom: 10px"></div>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Kunde</th>
+              <th>Telefon</th>
+              <th>E-Mail</th>
+              <th class="actions"><span class="sr-only">Aktionen</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of filtered(); track c.customerId) {
+              <tr class="clickable" (click)="openDetails(c)">
+                <td>
+                  <div class="person">
+                    <span [class]="'avatar ' + avatarTone(c.name + c.familyName)">{{ initials(c.name, c.familyName) }}</span>
+                    <span class="person-text">
+                      <span class="person-name">{{ c.name }} {{ c.familyName }}</span>
+                      @if (c.description) {
+                        <span class="person-meta">{{ c.description }}</span>
+                      }
+                    </span>
+                  </div>
+                </td>
+                <td class="muted nowrap">{{ c.phoneNumber }}</td>
+                <td class="muted">{{ c.email ?? '–' }}</td>
+                <td class="actions">
+                  <button type="button" class="btn btn-ghost btn-sm">Details</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4">
+                  <div class="empty">
+                    <span class="empty-icon"><lucide-icon [img]="icons.users" [size]="26" /></span>
+                    @if (customers().length) {
+                      <span class="empty-title">Kein Kunde gefunden</span>
+                    } @else {
+                      <span class="empty-title">Noch keine Kunden</span>
+                      <span class="empty-text">Lege Kunden an, um ihnen Verkäufe zuzuordnen.</span>
+                      <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()">Neuer Kunde</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
 </div>
+
+<app-modal [open]="mode() !== null" [title]="modalTitle()" (closed)="closeModal()">
+  @if (mode() === 'view') {
+    @if (selected(); as c) {
+      <div class="profile">
+        <span [class]="'avatar avatar-lg ' + avatarTone(c.name + c.familyName)">{{ initials(c.name, c.familyName) }}</span>
+        <div>
+          <h3 class="profile-name">{{ c.name }} {{ c.familyName }}</h3>
+          <p class="muted">{{ c.description || 'Keine Notiz' }}</p>
+        </div>
+      </div>
+      <div class="contact-list">
+        <a class="contact" [href]="'tel:' + c.phoneNumber">
+          <span class="stat-icon tone-green"><lucide-icon [img]="icons.phone" [size]="18" /></span>
+          <span>
+            <span class="label">Telefon</span>
+            <span class="contact-value">{{ c.phoneNumber }}</span>
+          </span>
+        </a>
+        @if (c.email) {
+          <a class="contact" [href]="'mailto:' + c.email">
+            <span class="stat-icon tone-blue"><lucide-icon [img]="icons.mail" [size]="18" /></span>
+            <span>
+              <span class="label">E-Mail</span>
+              <span class="contact-value">{{ c.email }}</span>
+            </span>
+          </a>
+        } @else {
+          <div class="contact">
+            <span class="stat-icon tone-blue"><lucide-icon [img]="icons.mail" [size]="18" /></span>
+            <span>
+              <span class="label">E-Mail</span>
+              <span class="contact-value faint">Nicht hinterlegt</span>
+            </span>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <form id="customerForm" class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="field">
+        <span class="label">Vorname <span class="req">*</span></span>
+        <input class="input" formControlName="name" autocomplete="off" />
+        @if (showError('name')) {
+          <span class="field-error">{{ form.controls.name.errors?.['server'] ?? 'Bitte Vornamen eingeben.' }}</span>
+        }
+      </label>
+      <label class="field">
+        <span class="label">Nachname <span class="req">*</span></span>
+        <input class="input" formControlName="familyName" autocomplete="off" />
+        @if (showError('familyName')) {
+          <span class="field-error">{{ form.controls.familyName.errors?.['server'] ?? 'Bitte Nachnamen eingeben.' }}</span>
+        }
+      </label>
+
+      <label class="field span-2">
+        <span class="label">Telefon <span class="req">*</span></span>
+        <div class="input-group">
+          <select class="select" formControlName="prefix" aria-label="Ländervorwahl">
+            @for (cc of countryCodes; track cc.code) {
+              <option [value]="cc.code">{{ cc.label }}</option>
+            }
+          </select>
+          <input class="input" formControlName="phoneNumber" inputmode="tel" placeholder="621 123 456" />
+        </div>
+        @if (showError('phoneNumber')) {
+          <span class="field-error">{{ form.controls.phoneNumber.errors?.['server'] ?? 'Bitte eine gültige Nummer ohne Vorwahl eingeben.' }}</span>
+        }
+      </label>
+
+      <label class="field span-2">
+        <span class="label">E-Mail</span>
+        <input class="input" type="email" formControlName="email" placeholder="optional" />
+        @if (showError('email')) {
+          <span class="field-error">{{ form.controls.email.errors?.['server'] ?? 'Bitte eine gültige E-Mail-Adresse eingeben.' }}</span>
+        }
+      </label>
+
+      <label class="field span-2">
+        <span class="label">Notiz</span>
+        <input class="input" formControlName="description" placeholder="z. B. Stammkunde, kauft immer Waldhonig" />
+      </label>
+
+      @if (formError()) {
+        <div class="alert alert-error span-2">{{ formError() }}</div>
+      }
+    </form>
+  }
+
+  <div modal-footer class="modal-footer">
+    @if (mode() === 'view') {
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Schließen</button>
+      <button type="button" class="btn btn-primary" (click)="startEdit()">
+        <lucide-icon [img]="icons.edit" [size]="16" /> Bearbeiten
+      </button>
+    } @else {
+      <button type="button" class="btn btn-secondary" (click)="mode() === 'edit' ? mode.set('view') : closeModal()">Abbrechen</button>
+      <button type="submit" form="customerForm" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner"></span>
+        }
+        {{ mode() === 'edit' ? 'Speichern' : 'Kunde anlegen' }}
+      </button>
+    }
+  </div>
+</app-modal>

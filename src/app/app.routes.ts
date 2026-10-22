@@ -1,18 +1,42 @@
-// src/app/app.routes.ts
 import { Routes } from '@angular/router';
-import { SellerListComponent } from './component/seller-list/seller-list';
-import { CustomerListComponent } from './component/customer-list/customer-list';
-import { HomeComponent } from './component/home/home';
-import { ProductList } from './component/product-list/product-list';
-import { TransactionListComponent } from './component/transaction-list/transaction-list';
-import { TransactionCreateComponent } from './component/transaction-create/transaction-create';
 
+// Every page is loaded lazily: the browser only downloads a page when it is opened.
 export const routes: Routes = [
-  { path: '', component: HomeComponent, title: 'Startseite | Honey Management', pathMatch: 'full' },
-  { path: 'sellers', component: SellerListComponent, title: 'Verkäufer | Honey Management'},
-  { path: 'customers', component: CustomerListComponent, title: 'Kunden | Honey Management'},
-  { path: 'products', component: ProductList, title: 'Produkte | Honey Management'},
-  { path: 'transactions', component: TransactionListComponent, title: 'Historie | Honey Management' },
-  { path: 'transactions/new', component: TransactionCreateComponent, title: 'Neuer Verkauf | Honey Management' },
+  {
+    path: '',
+    pathMatch: 'full',
+    title: 'Dashboard · HoneyApp',
+    loadComponent: () => import('./component/home/home').then(m => m.HomeComponent)
+  },
+  {
+    path: 'transactions/new',
+    title: 'Neuer Verkauf · HoneyApp',
+    loadComponent: () => import('./component/transaction-create/transaction-create').then(m => m.TransactionCreateComponent)
+  },
+  {
+    path: 'transactions',
+    title: 'Verkäufe · HoneyApp',
+    loadComponent: () => import('./component/transaction-list/transaction-list').then(m => m.TransactionListComponent)
+  },
+  {
+    path: 'products',
+    title: 'Produkte · HoneyApp',
+    loadComponent: () => import('./component/product-list/product-list').then(m => m.ProductListComponent)
+  },
+  {
+    path: 'expenses',
+    title: 'Ausgaben · HoneyApp',
+    loadComponent: () => import('./component/expense-list/expense-list').then(m => m.ExpenseListComponent)
+  },
+  {
+    path: 'customers',
+    title: 'Kunden · HoneyApp',
+    loadComponent: () => import('./component/customer-list/customer-list').then(m => m.CustomerListComponent)
+  },
+  {
+    path: 'sellers',
+    title: 'Verkäufer · HoneyApp',
+    loadComponent: () => import('./component/seller-list/seller-list').then(m => m.SellerListComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

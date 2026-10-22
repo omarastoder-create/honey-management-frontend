@@ -1,108 +1,172 @@
-<!-- src/app/component/product-list/product-list.html -->
-<div class="product-container">
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Produkte</h1>
+      <p class="page-subtitle">Dein Honigsortiment mit Preisen und Lagerbestand.</p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <lucide-icon [img]="icons.plus" [size]="18" /> Neues Produkt
+      </button>
+    </div>
+  </header>
 
-  <div class="header-section">
-    <h2>Products</h2>
-    <span class="badge">{{ products().length }} products</span>
+  <section class="grid grid-stats">
+    <div class="card stat">
+      <span class="stat-icon tone-honey"><lucide-icon [img]="icons.package" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Produkte</div>
+        <div class="stat-value">{{ products().length }}</div>
+      </div>
+    </div>
+    <div class="card stat">
+      <span class="stat-icon tone-blue"><lucide-icon [img]="icons.boxes" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Gläser auf Lager</div>
+        <div class="stat-value">{{ totalUnits() }}</div>
+      </div>
+    </div>
+    <div class="card stat">
+      <span class="stat-icon tone-green"><lucide-icon [img]="icons.coins" [size]="20" /></span>
+      <div>
+        <div class="stat-label">Lagerwert</div>
+        <div class="stat-value">{{ stockValue() | currency }}</div>
+        <div class="stat-hint">zum Standardpreis</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toolbar plain">
+    <div class="search">
+      <lucide-icon [img]="icons.search" [size]="16" />
+      <input
+        class="input"
+        type="search"
+        placeholder="Produkt suchen …"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </div>
   </div>
 
-  <form class="add-product-form" [formGroup]="productForm" (ngSubmit)="onSubmit()">
-    <div class="form-grid">
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
 
-      <div class="form-group">
-        <label for="description">Description</label>
-        <input id="description" type="text" formControlName="description" class="form-input" placeholder="Product description" />
-      </div>
-
-      <div class="form-group">
-        <label for="pricePerUnit">Price per unit</label>
-        <input id="pricePerUnit" type="number" step="0.01" formControlName="pricePerUnit" class="form-input" placeholder="0.00" />
-      </div>
-
-      <div class="form-group">
-        <label for="unitsToSell">Units to sell</label>
-        <input id="unitsToSell" type="number" formControlName="unitsToSell" class="form-input" placeholder="0" />
-      </div>
-
-      <div class="form-group">
-        <label for="dateOfHarvest">Date of harvest</label>
-        <input id="dateOfHarvest" type="date" formControlName="dateOfHarvest" class="form-input" />
-      </div>
-
-      <!-- Upload-Feld & Live-Vorschau -->
-      <div class="form-group">
-        <label>Product Image</label>
-        
-        <div class="file-upload-container">
-          <!-- Klickbares Custom-Label ersetzt den nativen Button -->
-          <label for="productImage" class="custom-file-button">
-            Datei auswählen
-          </label>
-          <input 
-            id="productImage" 
-            type="file" 
-            accept="image/*" 
-            (change)="onFileSelected($event)" 
-            class="hidden-input" 
-          />
-          @if (selectedFile) {
-            <span class="file-name">{{ selectedFile.name }}</span>
+  <section class="grid grid-cards">
+    @if (loading()) {
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="card skeleton" style="height: 300px"></div>
+      }
+    }
+    @for (p of filtered(); track p.productId) {
+      <article class="card product">
+        <div class="product-media">
+          @if (fileUrl(p.imageUrl); as img) {
+            <img [src]="img" [alt]="p.description" loading="lazy" />
+          } @else {
+            <span class="product-placeholder"><lucide-icon [img]="icons.droplet" [size]="36" /></span>
+          }
+          @if (p.unitsToSell === 0) {
+            <span class="badge badge-red product-badge">Ausverkauft</span>
+          } @else if (p.unitsToSell <= lowStockThreshold) {
+            <span class="badge badge-red product-badge">Nur noch {{ p.unitsToSell }}</span>
           }
         </div>
-
-        <!-- Render-Block für die Base64-Vorschau des Bildes -->
-        @if (imagePreview) {
-          <div class="image-preview-wrapper">
-            <img [src]="imagePreview" alt="Image Preview" class="image-preview" />
+        <div class="product-body">
+          <h3 class="product-name">{{ p.description }}</h3>
+          <span class="product-date">
+            <lucide-icon [img]="icons.calendar" [size]="14" /> Ernte {{ p.dateOfHarvest | date: 'MMMM y' }}
+          </span>
+          <div class="product-foot">
+            <span class="product-price">{{ p.pricePerUnit | currency }}</span>
+            <span class="muted small num">{{ p.unitsToSell }} Stk.</span>
           </div>
-        }
-      </div>
+          <div class="progress" [class.low]="p.unitsToSell <= lowStockThreshold">
+            <span [style.width.%]="(p.unitsToSell / maxStock()) * 100"></span>
+          </div>
+        </div>
+      </article>
+    } @empty {
+      @if (!loading()) {
+        <div class="card empty span-all">
+          <span class="empty-icon"><lucide-icon [img]="icons.droplet" [size]="26" /></span>
+          @if (products().length) {
+            <span class="empty-title">Kein Produkt gefunden</span>
+          } @else {
+            <span class="empty-title">Noch keine Produkte</span>
+            <span class="empty-text">Lege deinen ersten Honig an – mit Preis, Menge und einem schönen Foto.</span>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openModal()">Neues Produkt</button>
+          }
+        </div>
+      }
+    }
+  </section>
+</div>
 
+<app-modal [open]="modalOpen()" title="Neues Produkt" subtitle="Wird sofort im Verkauf angezeigt." (closed)="closeModal()">
+  <form id="productForm" class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field span-2">
+      <span class="label">Bezeichnung <span class="req">*</span></span>
+      <input class="input" formControlName="description" placeholder="z. B. Waldhonig 500 g" />
+      @if (showError('description')) {
+        <span class="field-error">{{ form.controls.description.errors?.['server'] ?? 'Bitte eine Bezeichnung eingeben.' }}</span>
+      }
+    </label>
+
+    <label class="field">
+      <span class="label">Preis pro Glas <span class="req">*</span></span>
+      <div class="input-affix">
+        <span class="affix">€</span>
+        <input class="input" type="number" step="0.01" min="0.01" formControlName="pricePerUnit" placeholder="0,00" />
+      </div>
+      @if (showError('pricePerUnit')) {
+        <span class="field-error">{{ form.controls.pricePerUnit.errors?.['server'] ?? 'Preis muss größer als 0 sein.' }}</span>
+      }
+    </label>
+
+    <label class="field">
+      <span class="label">Menge (Gläser) <span class="req">*</span></span>
+      <input class="input" type="number" min="1" step="1" formControlName="unitsToSell" placeholder="0" />
+      @if (showError('unitsToSell')) {
+        <span class="field-error">{{ form.controls.unitsToSell.errors?.['server'] ?? 'Mindestens 1 Glas.' }}</span>
+      }
+    </label>
+
+    <label class="field span-2">
+      <span class="label">Erntedatum <span class="req">*</span></span>
+      <input class="input" type="date" formControlName="dateOfHarvest" />
+    </label>
+
+    <div class="field span-2">
+      <span class="label">Foto</span>
+      @if (imagePreview(); as preview) {
+        <div class="image-preview">
+          <img [src]="preview" alt="Vorschau" />
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearImage()">
+            <lucide-icon [img]="icons.trash" [size]="14" /> Entfernen
+          </button>
+          <span class="faint small">{{ fileSize(image()?.size ?? 0) }} · wird automatisch verkleinert</span>
+        </div>
+      } @else if (processingImage()) {
+        <div class="skeleton" style="height: 120px"></div>
+      } @else {
+        <app-file-drop accept="image/*" label="Foto hierher ziehen oder klicken" hint="JPG, PNG oder WebP" (fileSelected)="onImageSelected($event)" />
+      }
     </div>
 
-    <button type="submit" class="btn-primary" [disabled]="productForm.invalid">
-      Add Product
-    </button>
+    @if (formError()) {
+      <div class="alert alert-error span-2">{{ formError() }}</div>
+    }
   </form>
 
-  <table class="product-table">
-    <thead>
-      <tr>
-        <th>Image</th> <!-- Neue Spalte -->
-        <th>Description</th>
-        <th>Price / Unit</th>
-        <th>Units</th>
-        <th>Date of Harvest</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      @for (product of products(); track product.productId) {
-        <tr>
-          <!-- Vom Server geladenes Bild rendern -->
-          <td>
-            @if (product.imageUrl) {
-              <img [src]="'http://localhost:8080' + product.imageUrl" alt="Product image" width="50" height="50" style="object-fit: cover; border-radius: 4px;">
-            } @else {
-              <span class="text-muted">No Image</span>
-            }
-          </td>
-          <td class="fw-bold">{{ product.description }}</td>
-          <td class="price">€{{ product.pricePerUnit | number:'1.2-2' }}</td>
-          <td class="units">{{ product.unitsToSell }}</td>
-          <td class="date">{{ product.dateOfHarvest | date:'dd/MM/yyyy' }}</td>
-          <td>
-            <button class="btn-action">Edit</button>
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <!-- WICHTIG: colspan auf 6 angepasst, da eine Spalte dazukam -->
-          <td colspan="6" class="empty-state">No products found.</td>
-        </tr>
+  <div modal-footer class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Abbrechen</button>
+    <button type="submit" form="productForm" class="btn btn-primary" [disabled]="saving() || processingImage()">
+      @if (saving()) {
+        <span class="spinner"></span>
       }
-    </tbody>
-  </table>
-
-</div>
+      Produkt anlegen
+    </button>
+  </div>
+</app-modal>

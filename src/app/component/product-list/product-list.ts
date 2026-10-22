@@ -1,151 +1,147 @@
-// src/app/component/product-list/product-list.ts
-import { CommonModule } from '@angular/common';
-// WICHTIG: ChangeDetectorRef hinzugefügt
-import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core'; 
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ProductRequest, ProductResponse, ProductService } from '../../services/products';
+import { Boxes, Calendar, Coins, Droplet, LucideAngularModule, Package, Plus, Search, Trash2 } from 'lucide-angular';
+import { fileUrl } from '../../core/api';
+import { fileSize, matchesSearch, todayIso } from '../../core/format';
+import { applyFieldErrors, errorMessage } from '../../core/http-error';
+import { compressImage } from '../../core/image';
+import { ToastService } from '../../core/toast.service';
+import { FileDropComponent } from '../../shared/file-drop/file-drop';
+import { ModalComponent } from '../../shared/modal/modal';
+import { LOW_STOCK_THRESHOLD, ProductResponse, ProductService } from '../../services/product.service';
 
 @Component({
-  imports: [CommonModule, ReactiveFormsModule],
-  standalone: true,
   selector: 'app-product-list',
-  styleUrl: './product-list.scss',
+  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule, LucideAngularModule, ModalComponent, FileDropComponent],
   templateUrl: './product-list.html',
+  styleUrl: './product-list.scss'
 })
-export class ProductList implements OnInit {
-
+export class ProductListComponent implements OnInit {
   private readonly productService = inject(ProductService);
-  private readonly cdr = inject(ChangeDetectorRef); // WICHTIG: Injektion des ChangeDetectors
+  private readonly toast = inject(ToastService);
 
-  readonly products = signal<ProductResponse[]>([]); 
-  
-  selectedFile: File | null = null;
-  imagePreview: string | ArrayBuffer | null = null;
-  
-  readonly productForm = new FormGroup({
-    description: new FormControl('', [Validators.required, Validators.minLength(5)]),
-    pricePerUnit: new FormControl('', [Validators.required, Validators.min(0)]),
-    unitsToSell: new FormControl('', [Validators.required, Validators.min(1)]),
-    dateOfHarvest: new FormControl('', [Validators.required])
+  protected readonly products = signal<ProductResponse[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  protected readonly search = signal('');
+
+  protected readonly modalOpen = signal(false);
+  protected readonly saving = signal(false);
+  protected readonly formError = signal<string | null>(null);
+  protected readonly image = signal<File | null>(null);
+  protected readonly imagePreview = signal<string | null>(null);
+  protected readonly processingImage = signal(false);
+
+  protected readonly icons = { plus: Plus, search: Search, droplet: Droplet, calendar: Calendar, trash: Trash2, package: Package, boxes: Boxes, coins: Coins };
+  protected readonly fileUrl = fileUrl;
+  protected readonly fileSize = fileSize;
+  protected readonly lowStockThreshold = LOW_STOCK_THRESHOLD;
+
+  protected readonly form = new FormGroup({
+    description: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2)] }),
+    pricePerUnit: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    unitsToSell: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
+    dateOfHarvest: new FormControl(todayIso(), { nonNullable: true, validators: [Validators.required] })
   });
-  
-  ngOnInit(): void {
-    this.loadProducts();
-  }
 
-  loadProducts(): void {
+  protected readonly filtered = computed(() =>
+    this.products().filter(p => matchesSearch(this.search(), p.description))
+  );
+
+  protected readonly totalUnits = computed(() => this.products().reduce((sum, p) => sum + p.unitsToSell, 0));
+  protected readonly stockValue = computed(() =>
+    this.products().reduce((sum, p) => sum + p.unitsToSell * p.pricePerUnit, 0)
+  );
+  protected readonly maxStock = computed(() => Math.max(1, ...this.products().map(p => p.unitsToSell)));
+
+  ngOnInit(): void {
     this.productService.getAllProducts().subscribe({
-      next: (data) => this.products.set(data),
-      error: (err) => console.error('Fehler beim Laden der Produkte:', err)
+      next: data => {
+        this.products.set(data);
+        this.loading.set(false);
+      },
+      error: err => {
+        this.error.set(errorMessage(err, 'Produkte konnten nicht geladen werden.'));
+        this.loading.set(false);
+      }
     });
   }
 
-  async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const originalFile = input.files[0];
-
-      try {
-        this.selectedFile = await this.compressImage(originalFile, 800, 800, 0.8);
-        
-        const reader = new FileReader();
-        reader.onload = () => {
-          this.imagePreview = reader.result;
-          
-          // WICHTIG: Zwingt Angular dazu, das UI sofort zu aktualisieren!
-          this.cdr.detectChanges(); 
-        };
-        reader.readAsDataURL(this.selectedFile);
-      } catch (error) {
-        console.error('Fehler bei der Bildkomprimierung:', error);
-      } finally {
-        // Optionaler Bugfix: Setzt das Input-Feld zurück. 
-        // Ohne dies feuert das (change)-Event nicht, wenn du 2x exakt dasselbe Bild auswählst.
-        input.value = ''; 
-      }
-    }
+  protected openModal(): void {
+    this.form.reset({ description: '', pricePerUnit: null, unitsToSell: null, dateOfHarvest: todayIso() });
+    this.formError.set(null);
+    this.clearImage();
+    this.modalOpen.set(true);
   }
 
-  onSubmit(): void {
-    if (this.productForm.invalid) {
-      this.productForm.markAllAsTouched();
+  protected closeModal(): void {
+    this.modalOpen.set(false);
+    this.clearImage();
+  }
+
+  protected async onImageSelected(file: File): Promise<void> {
+    if (!file.type.startsWith('image/')) {
+      this.toast.error('Bitte ein Bild auswählen (JPG, PNG oder WebP).');
       return;
     }
-
-    const request: ProductRequest = {
-      description: this.productForm.value.description!,
-      pricePerUnit: Number(this.productForm.value.pricePerUnit!),
-      unitsToSell: Number(this.productForm.value.unitsToSell!),
-      dateOfHarvest: this.productForm.value.dateOfHarvest!
-    };
-
-    const formData = new FormData();
-    const jsonBlob = new Blob([JSON.stringify(request)], { type: 'application/json' });
-    formData.append('product', jsonBlob);
-
-    if (this.selectedFile) {
-      formData.append('image', this.selectedFile);
+    this.processingImage.set(true);
+    try {
+      const compressed = await compressImage(file, 1200, 0.82);
+      this.clearImage();
+      this.image.set(compressed);
+      this.imagePreview.set(URL.createObjectURL(compressed));
+    } catch {
+      this.toast.error('Das Bild konnte nicht verarbeitet werden.');
+    } finally {
+      this.processingImage.set(false);
     }
-
-    this.productService.createProduct(formData).subscribe({
-      next: (newProduct) => {
-        this.products.update(current => [...current, newProduct]);
-        this.productForm.reset();
-        this.selectedFile = null;
-        this.imagePreview = null;
-      },
-      error: (err) => console.error('Fehler beim Erstellen:', err)
-    });
   }
 
-  private compressImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<File> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
+  protected clearImage(): void {
+    const preview = this.imagePreview();
+    if (preview) URL.revokeObjectURL(preview);
+    this.imagePreview.set(null);
+    this.image.set(null);
+  }
 
-          if (width > height && width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else if (height > width && height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
+  protected submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const value = this.form.getRawValue();
+    this.saving.set(true);
+    this.formError.set(null);
+
+    this.productService
+      .createProduct(
+        {
+          description: value.description.trim(),
+          pricePerUnit: Number(value.pricePerUnit),
+          unitsToSell: Number(value.unitsToSell),
+          dateOfHarvest: value.dateOfHarvest
+        },
+        this.image()
+      )
+      .subscribe({
+        next: product => {
+          this.products.update(list => [...list, product]);
+          this.toast.success(`„${product.description}“ wurde angelegt.`);
+          this.saving.set(false);
+          this.closeModal();
+        },
+        error: err => {
+          if (!applyFieldErrors(this.form, err)) {
+            this.formError.set(errorMessage(err, 'Produkt konnte nicht gespeichert werden.'));
           }
+          this.saving.set(false);
+        }
+      });
+  }
 
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Canvas API nicht unterstützt.'));
-            return;
-          }
-          
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const newFileName = file.name.replace(/\.[^/.]+$/, ".jpg");
-                resolve(new File([blob], newFileName, { type: 'image/jpeg' }));
-              } else {
-                reject(new Error('Blob Generierung fehlgeschlagen.'));
-              }
-            },
-            'image/jpeg',
-            quality
-          );
-        };
-        img.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'));
-      };
-      reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
-    });
+  protected showError(name: string): boolean {
+    const c = this.form.get(name);
+    return !!c && c.invalid && c.touched;
   }
 }

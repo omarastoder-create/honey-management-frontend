@@ -1,11 +1,12 @@
-// src/app/services/transaction.service.ts
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { apiUrl } from '../core/api';
 
 export interface TransactionItemRequest {
   readonly productId: string;
   readonly quantity: number;
+  /** null = use the product's normal price */
   readonly customPricePerUnit: number | null;
   readonly isGift: boolean;
 }
@@ -23,7 +24,6 @@ export interface TransactionItemResponse {
   readonly units: number;
   readonly pricePerUnit: number;
   readonly subtotalPrice: number;
-  readonly subTotal?: number; // Abwärtskompatibel für dein Template
   readonly isGift: boolean;
 }
 
@@ -36,20 +36,16 @@ export interface SaleTransactionResponse {
   readonly items: readonly TransactionItemResponse[];
 }
 
-export type TransactionResponse = SaleTransactionResponse;
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TransactionService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api/v1/transactions';
+  private readonly url = apiUrl('transactions');
 
   getAllTransactions(): Observable<SaleTransactionResponse[]> {
-    return this.http.get<SaleTransactionResponse[]>(this.apiUrl);
+    return this.http.get<SaleTransactionResponse[]>(this.url);
   }
 
   createSaleTransaction(request: SaleTransactionRequest): Observable<SaleTransactionResponse> {
-    return this.http.post<SaleTransactionResponse>(this.apiUrl, request);
+    return this.http.post<SaleTransactionResponse>(this.url, request);
   }
 }
